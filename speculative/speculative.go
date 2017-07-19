@@ -346,7 +346,9 @@ each of these subranges in parallel.
 
 The range is specified by a low and high integer, with 0 <= low <=
 high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold.
+range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
+use a threshold value of 4 here and tweak it later to fine-tune
+performance.
 
 The range function is invoked for each subrange in its own goroutine,
 and ErrRange returns either when all range functions have terminated;
@@ -400,7 +402,9 @@ each of these subranges in parallel.
 
 The range is specified by a low and high integer, with 0 <= low <=
 high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold.
+range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
+use a threshold value of 4 here and tweak it later to fine-tune
+performance.
 
 The range predicate is invoked for each subrange in its own goroutine,
 and RangeAnd returns true if all of them return true; or RangeAnd
@@ -452,7 +456,9 @@ each of these subranges in parallel.
 
 The range is specified by a low and high integer, with 0 <= low <=
 high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold.
+range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
+use a threshold value of 4 here and tweak it later to fine-tune
+performance.
 
 The range predicate is invoked for each subrange in its own goroutine,
 and RangeOr returns false if all of them return false; or RangeOr
@@ -504,7 +510,9 @@ predicate for each of these subranges in parallel.
 
 The range is specified by a low and high integer, with 0 <= low <=
 high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold.
+range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
+use a threshold value of 4 here and tweak it later to fine-tune
+performance.
 
 The range predicate is invoked for each subrange in its own goroutine,
 and ErrRangeAnd returns true if all of them return true; or
@@ -569,7 +577,9 @@ predicate for each of these subranges in parallel.
 
 The range is specified by a low and high integer, with 0 <= low <=
 high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold.
+range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
+use a threshold value of 4 here and tweak it later to fine-tune
+performance.
 
 The range predicate is invoked for each subrange in its own goroutine,
 and ErrRangeOr returns false if all of them return false; or

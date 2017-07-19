@@ -204,8 +204,8 @@ determined easily.
 
 BatchesPerProc can be called safely by user programs before Run or
 RunWithContext is called. Use a value of 1 if you expect no load
-imbalance, 2 if you expect some imbalance, or 3 or more if you expect
-even more load imbalance.
+imbalance, between 2 and 10 if you expect some imbalance, or 10 or
+more if you expect even more load imbalance.
 
 If user programs do not call BatchesPerProc, or call them with a value
 < 1, then the pipeline will choose a reasonable default value.
@@ -219,8 +219,8 @@ func (p *Pipeline) BatchesPerProc(n int) (batchesPerProc int) {
 	if n < 1 {
 		batchesPerProc = p.batchesPerProc
 		if batchesPerProc < 1 {
-			batchesPerProc = 2
-			p.batchesPerProc = 2
+			batchesPerProc = 4
+			p.batchesPerProc = 4
 		}
 	} else {
 		batchesPerProc = n
@@ -295,7 +295,7 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 				}
 			}
 		} else {
-			batchSize := dataSize / (p.BatchesPerProc(0) * runtime.GOMAXPROCS(0))
+			batchSize := ((dataSize - 1) / (p.BatchesPerProc(0) * runtime.GOMAXPROCS(0))) + 1
 			if batchSize == 0 {
 				batchSize = 1
 			}

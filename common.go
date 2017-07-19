@@ -26,6 +26,14 @@ pargo/sync provides an efficient parallel map implementation.
 
 pargo/pipeline provides functions and data structures to construct
 and execute parallel pipelines.
+
+Pargo has been influenced to various extents by ideas from Cilk,
+Threading Building Blocks, and Java's java.util.concurrent and
+java.util.stream packages. See
+http://supertech.csail.mit.edu/papers/steal.pdf for some theoretical
+background, and the sample chapter at
+https://mitpress.mit.edu/books/introduction-algorithms for a more
+practical overview of the underlying concepts.
 */
 package pargo
 
@@ -77,8 +85,27 @@ functions.
 It takes a low and high integer as input, with 0 <= low <= high, as
 well as an input threshold designator.
 
-If the input threshold is > 0, the return value is min(1, (high - low)
-/ (threshold * runtime.GOMAXPROCS(0))).
+Useful threshold parameter values are 1 to evenly divide up the range
+across the avaliable logical CPUs (as determined by
+runtime.GOMAXPROCS(0)); or 2 or higher to additionally divide that
+number by the threshold parameter. Use 1 if you expect no load
+imbalance, between 2 and 10 if you expect some load imbalance, or 10
+or more if you expect even more load imbalance.
+
+A threshold parameter value of 0 divides up the input range into
+subranges of size 1 and yields the most fine-grained parallelism.
+Fine-grained parallelism (with a threshold parameter of 0, or 2 or
+higher) only pays off if the work per subrange is sufficiently large
+to compensate for the scheduling overhead.
+
+A threshold parameter value below zero can be used to specify the
+subrange size directly, which becomes the absolute value of the
+threshold parameter value.
+
+More specifically:
+
+If the input threshold is > 0, the return value is ceiling((high -
+low) / (threshold * runtime.GOMAXPROCS(0))).
 
 If the input threshold is == 0, the return value is 1.
 
@@ -89,7 +116,7 @@ func ComputeEffectiveThreshold(low, high, threshold int) int {
 		panic(fmt.Sprintf("invalid range: %v:%v", low, high))
 	}
 	if threshold > 0 {
-		threshold = (high - low) / (threshold * runtime.GOMAXPROCS(0))
+		threshold = ((high - low - 1) / (threshold * runtime.GOMAXPROCS(0))) + 1
 	} else if threshold < 0 {
 		return -1 * threshold
 	}
