@@ -114,13 +114,13 @@ type (
 	  A Pipeline must not be copied after first use.
 	*/
 	Pipeline struct {
-		mutex          sync.RWMutex
-		err            error
-		ctx            context.Context
-		cancel         context.CancelFunc
-		source         Source
-		nodes          []Node
-		batchesPerProc int
+		mutex      sync.RWMutex
+		err        error
+		ctx        context.Context
+		cancel     context.CancelFunc
+		source     Source
+		nodes      []Node
+		nofBatches int
 	}
 )
 
@@ -197,34 +197,32 @@ func (p *Pipeline) Add(nodes ...Node) {
 }
 
 /*
-BatchesPerProc sets or gets the number of batches that are created per
-runtime.GOMAXPROC(0) from the data source for this pipeline, if the
-expected total size for this pipeline's data source is known or can be
-determined easily.
+NofBatches sets or gets the number of batches that are created from
+the data source for this pipeline, if the expected total size for this
+pipeline's data source is known or can be determined easily.
 
-BatchesPerProc can be called safely by user programs before Run or
-RunWithContext is called. Use a value of 1 if you expect no load
-imbalance, between 2 and 10 if you expect some imbalance, or 10 or
-more if you expect even more load imbalance.
+NofBatches can be called safely by user programs before Run or
+RunWithContext is called.
 
-If user programs do not call BatchesPerProc, or call them with a value
-< 1, then the pipeline will choose a reasonable default value.
+If user programs do not call NofBatches, or call them with a value <
+1, then the pipeline will choose a reasonable default value that takes
+runtime.GOMAXPROCS(0) into account.
 
 If the expected total size for this pipeline's data source is unknown,
 or is difficult to determine, then the pipeline will start with a
 reasonably small batch size and increase the batch size for every
 subsequent batch, to accomodate data sources of different total sizes.
 */
-func (p *Pipeline) BatchesPerProc(n int) (batchesPerProc int) {
+func (p *Pipeline) NofBatches(n int) (nofBatches int) {
 	if n < 1 {
-		batchesPerProc = p.batchesPerProc
-		if batchesPerProc < 1 {
-			batchesPerProc = 4
-			p.batchesPerProc = 4
+		nofBatches = p.nofBatches
+		if nofBatches < 1 {
+			nofBatches = 2 * runtime.GOMAXPROCS(0)
+			p.nofBatches = nofBatches
 		}
 	} else {
-		batchesPerProc = n
-		p.batchesPerProc = n
+		nofBatches = n
+		p.nofBatches = n
 	}
 	return
 }
@@ -252,15 +250,15 @@ by the function calling RunWithContext.
 
 RunWithContext should only be called after a data source has been set
 using the Source method, and one or more Node objects have been added
-to the pipeline using the Add method. BatchesPerProc can be called
-before RunWithContext to deal with load imbalance, but this is not
-necessary since RunWithContext chooses a reasonable default value.
+to the pipeline using the Add method. NofBatches can be called before
+RunWithContext to deal with load imbalance, but this is not necessary
+since RunWithContext chooses a reasonable default value.
 
 RunWithContext prepares the data source, tells each node that batches
 are going to be sent to them by calling Begin, and then fetches
-batches from the data source and sends them to the nodes by calling
-Feed. Once the data source is depleted, the nodes are informed that
-the end of the data source has been reached.
+batches from the data source and sends them to the nodes. Once the
+data source is depleted, the nodes are informed that the end of the
+data source has been reached.
 */
 func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc) {
 	if p.err != nil {
@@ -295,7 +293,7 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 				}
 			}
 		} else {
-			batchSize := ((dataSize - 1) / (p.BatchesPerProc(0) * runtime.GOMAXPROCS(0))) + 1
+			batchSize := ((dataSize - 1) / p.NofBatches(0)) + 1
 			if batchSize == 0 {
 				batchSize = 1
 			}
@@ -313,9 +311,22 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 }
 
 /*
-Run calls RunWithContext(context.WithCancel(context.Background())),
-and ensures that the cancel function is called at least once when the
-pipeline is done.
+Run initiates pipeline execution by calling
+RunWithContext(context.WithCancel(context.Background())), and ensures
+that the cancel function is called at least once when the pipeline is
+done.
+
+Run should only be called after a data source has been set using the
+Source method, and one or more Node objects have been added to the
+pipeline using the Add method. NofBatches can be called before Run to
+deal with load imbalance, but this is not necessary since Run chooses
+a reasonable default value.
+
+Run prepares the data source, tells each node that batches are going
+to be sent to them by calling Begin, and then fetches batches from the
+data source and sends them to the nodes. Once the data source is
+depleted, the nodes are informed that the end of the data source has
+been reached.
 */
 func (p *Pipeline) Run() {
 	ctx, cancel := context.WithCancel(context.Background())

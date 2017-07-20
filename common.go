@@ -78,50 +78,27 @@ type (
 )
 
 /*
-ComputeEffectiveThreshold determines a threshold for the
-parallel.Range, speculative.Range, and sequential.Range groups of
-functions.
-
-It takes a low and high integer as input, with 0 <= low <= high, as
-well as an input threshold designator.
-
-Useful threshold parameter values are 1 to evenly divide up the range
-across the avaliable logical CPUs (as determined by
-runtime.GOMAXPROCS(0)); or 2 or higher to additionally divide that
-number by the threshold parameter. Use 1 if you expect no load
-imbalance, between 2 and 10 if you expect some load imbalance, or 10
-or more if you expect even more load imbalance.
-
-A threshold parameter value of 0 divides up the input range into
-subranges of size 1 and yields the most fine-grained parallelism.
-Fine-grained parallelism (with a threshold parameter of 0, or 2 or
-higher) only pays off if the work per subrange is sufficiently large
-to compensate for the scheduling overhead.
-
-A threshold parameter value below zero can be used to specify the
-subrange size directly, which becomes the absolute value of the
-threshold parameter value.
-
-More specifically:
-
-If the input threshold is > 0, the return value is ceiling((high -
-low) / (threshold * runtime.GOMAXPROCS(0))).
-
-If the input threshold is == 0, the return value is 1.
-
-If the input threshold is < 0, the return value is abs(threshold).
+ComputeNofBatches is an internal function used by the parallel.Range,
+speculative.Range, and sequential.Range groups of functions.
 */
-func ComputeEffectiveThreshold(low, high, threshold int) int {
-	if (low < 0) || (high < low) {
+func ComputeNofBatches(low, high, n int) (batches int) {
+	switch size := high - low; {
+	case size > 0:
+		switch {
+		case n == 0:
+			batches = 2 * runtime.GOMAXPROCS(0)
+		case n > 0:
+			batches = n
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+		if batches > size {
+			batches = size
+		}
+	case size == 0:
+		batches = 1
+	default:
 		panic(fmt.Sprintf("invalid range: %v:%v", low, high))
 	}
-	if threshold > 0 {
-		threshold = ((high - low - 1) / (threshold * runtime.GOMAXPROCS(0))) + 1
-	} else if threshold < 0 {
-		return -1 * threshold
-	}
-	if threshold == 0 {
-		threshold = 1
-	}
-	return threshold
+	return
 }

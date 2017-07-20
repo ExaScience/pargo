@@ -17,7 +17,7 @@ ErrAnd and ErrOr).
 
 Range, RangeAnd, and RangeOr are similar do Do, And, and Or, except
 they receive a range and a single range function each. The range is
-specified by a low and high integer, with 0 <= low <= high. Range,
+specified by a low and high integer, with low <= high. Range,
 RangeAnd, and RangeOr divide the range up into subranges and invoke
 the range function for each of these subranges in parallel. RangeAnd
 and RangeOr additionally combine the boolean return values of the
@@ -30,10 +30,6 @@ similary way as by ErrDo, ErrAnd, and ErrOr.
 
 Range, ErrRange, RangeAnd, ErrRangeAnd, RangeOr, and ErrRangeOr are
 useful for example for expressing parallel algorithms over slices.
-
-All of these functions divide up the input ranges according to a
-threshold parameter. See ComputeEffectiveThreshold in package pargo
-for more details.
 
 All of the functions described above also take care of dealing with
 panics: If one or more of the functions invoked in parallel panics,
@@ -59,6 +55,7 @@ can.
 package parallel
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/exascience/pargo"
@@ -392,321 +389,369 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 }
 
 /*
-Range receives a range, a threshold, and a RangeFunc function, divides
-the range into subranges, and invokes the range function for each of
-these subranges in parallel.
+Range receives a range, a batch count, and a RangeFunc function,
+divides the range into batches, and invokes the range function for
+each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range function is invoked for each subrange in its own goroutine,
-and Range returns only when all range functions have terminated.
+The range function is invoked for each batch in its own goroutine, and
+Range returns only when all range functions have terminated.
+
+Range panics if high < low, or if n < 0.
 
 If one or more range function invocations panic, the corresponding
 goroutines recover the panics, and Range eventually panics with the
 left-most recovered panic value.
 */
-func Range(low, high, threshold int, f pargo.RangeFunc) {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int)
-	recur = func(low, high int) {
-		if size := high - low; size <= threshold {
+func Range(low, high, n int, f pargo.RangeFunc) {
+	var recur func(int, int, int)
+	recur = func(low, high, n int) {
+		switch {
+		case n == 1:
 			f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				f(low, high)
+			} else {
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					recur(mid, high, n-half)
 				}()
-				recur(mid, high)
-			}()
-			recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
+				recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
 			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	recur(low, high)
+	recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }
 
 /*
-ErrRange receives a range, a threshold, and an ErrRangeFunc function,
-divides the range into subranges, and invokes the range function for
-each of these subranges in parallel.
+ErrRange receives a range, a batch count, and an ErrRangeFunc
+function, divides the range into batches, and invokes the range
+function for each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range function is invoked for each subrange in its own goroutine,
-and ErrRange returns only when all range functions have terminated,
+The range function is invoked for each batch in its own goroutine, and
+ErrRange returns only when all range functions have terminated,
 returning the left-most error value that is different from nil.
+
+ErrRange panics if high < low, or if n < 0.
 
 If one or more range function invocations panic, the corresponding
 goroutines recover the panics, and ErrRange eventually panics with the
 left-most recovered panic value.
 */
-func ErrRange(low, high, threshold int, f pargo.ErrRangeFunc) error {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int) error
-	recur = func(low, high int) (err error) {
-		if size := high - low; size <= threshold {
+func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
+	var recur func(int, int, int) error
+	recur = func(low, high, n int) (err error) {
+		switch {
+		case n == 1:
 			return f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var err0, err1 error
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
-				}()
-				err1 = recur(mid, high)
-			}()
-			err0 = recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
-			}
-			if err0 != nil {
-				err = err0
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				return f(low, high)
 			} else {
-				err = err1
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					err1 = recur(mid, high, n-half)
+				}()
+				err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				if err0 != nil {
+					err = err0
+				} else {
+					err = err1
+				}
+				return
 			}
-			return
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high)
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }
 
 /*
-RangeAnd receives a range, a threshold, and a RangePredicate function,
-divides the range into subranges, and invokes the range predicate for
-each of these subranges in parallel.
+RangeAnd receives a range, a batch count, and a RangePredicate
+function, divides the range into batches, and invokes the range
+predicate for each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range predicate is invoked for each subrange in its own goroutine,
+The range predicate is invoked for each batch in its own goroutine,
 and RangeAnd returns only when all range predicates have terminated,
 combining all return values with the && operator.
+
+RangeAnd panics if high < low, or if n < 0.
 
 If one or more range predicate invocations panic, the corresponding
 goroutines recover the panics, and RangeAnd eventually panics with the
 left-most recovered panic value.
 */
-func RangeAnd(low, high, threshold int, f pargo.RangePredicate) bool {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int) bool
-	recur = func(low, high int) (result bool) {
-		if size := high - low; size <= threshold {
+func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
+	var recur func(int, int, int) bool
+	recur = func(low, high, n int) (result bool) {
+		switch {
+		case n == 1:
 			return f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var b0, b1 bool
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				return f(low, high)
+			} else {
+				var b0, b1 bool
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					b1 = recur(mid, high, n-half)
 				}()
-				b1 = recur(mid, high)
-			}()
-			b0 = recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
+				b0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return b0 && b1
 			}
-			return b0 && b1
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high)
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }
 
 /*
-RangeOr receives a range, a threshold, and a RangePredicate function,
-divides the range into subranges, and invokes the range predicate for
-each of these subranges in parallel.
+RangeOr receives a range, a batch count, and a RangePredicate
+function, divides the range into batches, and invokes the range
+predicate for each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range predicate is invoked for each subrange in its own goroutine,
+The range predicate is invoked for each batch in its own goroutine,
 and RangeOr returns only when all range predicates have terminated,
 combining all return values with the || operator.
+
+RangeOr panics if high < low, or if n < 0.
 
 If one or more range predicate invocations panic, the corresponding
 goroutines recover the panics, and RangeOr eventually panics with the
 left-most recovered panic value.
 */
-func RangeOr(low, high, threshold int, f pargo.RangePredicate) bool {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int) bool
-	recur = func(low, high int) (result bool) {
-		if size := high - low; size <= threshold {
+func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
+	var recur func(int, int, int) bool
+	recur = func(low, high, n int) (result bool) {
+		switch {
+		case n == 1:
 			return f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var b0, b1 bool
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				return f(low, high)
+			} else {
+				var b0, b1 bool
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					b1 = recur(mid, high, n-half)
 				}()
-				b1 = recur(mid, high)
-			}()
-			b0 = recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
+				b0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return b0 || b1
 			}
-			return b0 || b1
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high)
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }
 
 /*
-ErrRangeAnd receives a range, a threshold, and an ErrRangePredicate
-function, divides the range into subranges, and invokes the range
-predicate for each of these subranges in parallel.
+ErrRangeAnd receives a range, a batch count, and an ErrRangePredicate
+function, divides the range into batches, and invokes the range
+predicate for each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range predicate is invoked for each subrange in its own goroutine,
+The range predicate is invoked for each batch in its own goroutine,
 and ErrRangeAnd returns only when all range predicates have
 terminated, combining all return values with the && operator.
 ErrRangeAnd also returns the left-most error value that is different
 from nil as a second return value.
 
+ErrRangeAnd panics if high < low, or if n < 0.
+
 If one or more range predicate invocations panic, the corresponding
 goroutines recover the panics, and ErrRangeAnd eventually panics with
 the left-most recovered panic value.
 */
-func ErrRangeAnd(low, high, threshold int, f pargo.ErrRangePredicate) (bool, error) {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int) (bool, error)
-	recur = func(low, high int) (result bool, err error) {
-		if size := high - low; size <= threshold {
+func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
+	var recur func(int, int, int) (bool, error)
+	recur = func(low, high, n int) (result bool, err error) {
+		switch {
+		case n == 1:
 			return f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var b0, b1 bool
-			var err0, err1 error
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
-				}()
-				b1, err1 = recur(mid, high)
-			}()
-			b0, err0 = recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
-			}
-			result = b0 && b1
-			if err0 != nil {
-				err = err0
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				return f(low, high)
 			} else {
-				err = err1
+				var b0, b1 bool
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					b1, err1 = recur(mid, high, n-half)
+				}()
+				b0, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				result = b0 && b1
+				if err0 != nil {
+					err = err0
+				} else {
+					err = err1
+				}
+				return
 			}
-			return
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high)
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }
 
 /*
-ErrRangeOr receives a range, a threshold, and an ErrRangePredicate
-function, divides the range into subranges, and invokes the range
-predicate for each of these subranges in parallel.
+ErrRangeOr receives a range, a batch count, and an ErrRangePredicate
+function, divides the range into batches, and invokes the range
+predicate for each of these batches in parallel.
 
-The range is specified by a low and high integer, with 0 <= low <=
-high. The subranges are determined by dividing up the size of the
-range (high - low) in pargo.ComputeEffectiveThreshold. When in doubt,
-use a threshold value of 4 here and tweak it later to fine-tune
-performance.
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
 
-The range predicate is invoked for each subrange in its own goroutine,
+The range predicate is invoked for each batch in its own goroutine,
 and ErrRangeOr returns only when all range predicates have terminated,
-combining all return values with the || operator.  ErrRangeOr also
+combining all return values with the || operator. ErrRangeAnd also
 returns the left-most error value that is different from nil as a
 second return value.
+
+ErrRangeOr panics if high < low, or if n < 0.
 
 If one or more range predicate invocations panic, the corresponding
 goroutines recover the panics, and ErrRangeOr eventually panics with
 the left-most recovered panic value.
 */
-func ErrRangeOr(low, high, threshold int, f pargo.ErrRangePredicate) (bool, error) {
-	threshold = pargo.ComputeEffectiveThreshold(low, high, threshold)
-	var recur func(int, int) (bool, error)
-	recur = func(low, high int) (result bool, err error) {
-		if size := high - low; size <= threshold {
+func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
+	var recur func(int, int, int) (bool, error)
+	recur = func(low, high, n int) (result bool, err error) {
+		switch {
+		case n == 1:
 			return f(low, high)
-		} else {
-			half := size / 2
-			mid := low + half
-			var b0, b1 bool
-			var err0, err1 error
-			var p interface{}
-			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					p = recover()
-				}()
-				b1, err1 = recur(mid, high)
-			}()
-			b0, err0 = recur(low, mid)
-			wg.Wait()
-			if p != nil {
-				panic(p)
-			}
-			result = b0 || b1
-			if err0 != nil {
-				err = err0
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= high {
+				return f(low, high)
 			} else {
-				err = err1
+				var b0, b1 bool
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					b1, err1 = recur(mid, high, n-half)
+				}()
+				b0, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				result = b0 || b1
+				if err0 != nil {
+					err = err0
+				} else {
+					err = err1
+				}
+				return
 			}
-			return
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high)
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
 }

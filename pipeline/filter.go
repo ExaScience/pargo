@@ -58,7 +58,7 @@ returned receivers and finalizers (except for nil values) to the
 result slices.
 
 ComposeFilters is used in Node implementations. User programs
-typically do not call FeedForward.
+typically do not call ComposeFilters.
 */
 func ComposeFilters(pipeline *Pipeline, kind NodeKind, dataSize *int, filters []Filter) (receivers []Receiver, finalizers []Finalizer) {
 	for _, filter := range filters {
