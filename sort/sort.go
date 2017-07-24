@@ -65,8 +65,8 @@ func IsSorted(data sort.Interface) bool {
 }
 
 /*
-  IntSlice attaches the methods of sort.Interface, SequentialSorter,
-  Sorter, and StableSorter to []int, sorting in increasing order.
+IntSlice attaches the methods of sort.Interface, SequentialSorter,
+Sorter, and StableSorter to []int, sorting in increasing order.
 */
 type IntSlice []int
 
@@ -98,18 +98,17 @@ func (this IntSlice) Assign(that StableSorter) func(i, j, len int) {
 }
 
 /*
-  IntsAreSorted determines in parallel whether a slice of ints is
-  already sorted in increasing order. It attempts to terminate early
-  when the return value is false.
+IntsAreSorted determines in parallel whether a slice of ints is
+already sorted in increasing order. It attempts to terminate early
+when the return value is false.
 */
 func IntsAreSorted(a []int) bool {
 	return IsSorted(IntSlice(a))
 }
 
 /*
-  Float64Slice attaches the methods of sort.Interface,
-  SequentialSorter, Sorter, and StableSorter to []float64, sorting in
-  increasing order.
+Float64Slice attaches the methods of sort.Interface, SequentialSorter,
+Sorter, and StableSorter to []float64, sorting in increasing order.
 */
 type Float64Slice []float64
 
@@ -141,18 +140,17 @@ func (this Float64Slice) Assign(that StableSorter) func(i, j, len int) {
 }
 
 /*
-  Float64sAreSorted determines in parallel whether a slice of float64s
-  is already sorted in increasing order. It attempts to terminate
-  early when the return value is false.
+Float64sAreSorted determines in parallel whether a slice of float64s
+is already sorted in increasing order. It attempts to terminate early
+when the return value is false.
 */
 func Float64sAreSorted(a []float64) bool {
 	return IsSorted(Float64Slice(a))
 }
 
 /*
-  StringSlice attaches the methods of sort.Interface,
-  SequentialSorter, Sorter, and StableSorter to []string, sorting in
-  increasing order.
+StringSlice attaches the methods of sort.Interface, SequentialSorter,
+Sorter, and StableSorter to []string, sorting in increasing order.
 */
 type StringSlice []string
 
@@ -184,9 +182,9 @@ func (this StringSlice) Assign(that StableSorter) func(i, j, len int) {
 }
 
 /*
-  StringsAreSorted determines in parallel whether a slice of strings
-  is already sorted in increasing order. It attempts to terminate
-  early when the return value is false.
+StringsAreSorted determines in parallel whether a slice of strings is
+already sorted in increasing order. It attempts to terminate early
+when the return value is false.
 */
 func StringsAreSorted(a []string) bool {
 	return IsSorted(StringSlice(a))

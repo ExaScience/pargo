@@ -69,12 +69,13 @@ func NewMap(size int) *Map {
 }
 
 /*
-  Split retrieves the split for a particular key.
+Split retrieves the split for a particular key.
 
-  The split must be locked/unlocked properly by user programs to
-  safely access its contents. In many cases, it is easier to use one
-  of the high-level methods, like Load, LoadOrStore, LoadOrCompute,
-  and Delete, which implicitly take care of proper locking.
+The split must be locked/unlocked properly by user programs to safely
+access its contents. In many cases, it is easier to use one of the
+high-level methods, like Load, LoadOrStore, LoadOrCompute, Delete,
+DeleteOrStore, DeleteOrCompute, and Modify, which implicitly take care
+of proper locking.
 */
 func (m *Map) Split(key Hasher) *Split {
 	splits := m.splits
