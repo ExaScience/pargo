@@ -2,15 +2,15 @@
 Package pargo provides functions and data structures for expressing
 parallel algorithms. While Go is primarily designed for concurrent
 programming, it is also usable to some extent for parallel
-programming, and this library provides convenince functionality to
+programming, and this library provides convenience functionality to
 turn otherwise sequential algorithms into parallel algorithms, with
 the goal to improve performance.
 
 Pargo provides the following subpackages:
 
 pargo/parallel provides simple functions for executing series of
-thunks or predicates, as well as thunks or predicates over ranges in
-parallel.
+thunks or predicates, as well as thunks, predicates, or reducers over
+ranges in parallel.
 
 pargo/speculative provides speculative implementations of most of
 the functions from pargo/parallel. These implementations not only
