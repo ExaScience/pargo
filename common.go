@@ -75,6 +75,74 @@ type (
 	// to high, with 0 <= low <= high, and returns a bool, and an error
 	// value or nil.
 	ErrRangePredicate func(low, high int) (bool, error)
+
+	// A RangeReducer is a function that receives a range from low to
+	// high, with 0 <= low <= high, and returns a result.
+	RangeReducer func(low, high int) interface{}
+
+	// An ErrRangeReducer is a function that receives a range from low
+	// to high, with 0 <= low <= high, and returns a result, and an
+	// error value or nil.
+	ErrRangeReducer func(low, high int) (interface{}, error)
+
+	// A PairReducer is function that receives two values and returns a
+	// result.
+	PairReducer func(x, y interface{}) interface{}
+
+	// An ErrPairReducer is a function that receives two values and
+	// returns a result, and an error value or nil.
+	ErrPairReducer func(x, y interface{}) (interface{}, error)
+
+	// An IntRangeReducer is a function that receives a range from low
+	// to high, with 0 <= low <= high, and returns an int result.
+	IntRangeReducer func(low, high int) int
+
+	// An ErrIntRangeReduce is a function that receives a range from low
+	// to high, with 0 <= low <= high, and returns an int result, and an
+	// error value or nil.
+	ErrIntRangeReducer func(low, high int) (int, error)
+
+	// An IntPairReducer is function that receives two int values and
+	// returns an int result.
+	IntPairReducer func(x, y int) int
+
+	// An ErrIntPairReducer is a function that receives two int values
+	// and returns an int result, and an error value or nil.
+	ErrIntPairReducer func(x, y int) (int, error)
+
+	// A Float64RangeReducer is a function that receives a range from
+	// low to high, with 0 <= low <= high, and returns a float64 result.
+	Float64RangeReducer func(low, high int) float64
+
+	// An ErrFloat64RangeReduce is a function that receives a range from
+	// low to high, with 0 <= low <= high, and returns a float64 result,
+	// and an error value or nil.
+	ErrFloat64RangeReducer func(low, high int) (float64, error)
+
+	// A Float64PairReducer is function that receives two float64 values
+	// and returns a float64 result.
+	Float64PairReducer func(x, y float64) float64
+
+	// An ErrFloat64PairReducer is a function that receives two float64
+	// values and returns a float64 result, and an error value or nil.
+	ErrFloat64PairReducer func(x, y float64) (float64, error)
+
+	// A StringRangeReducer is a function that receives a range from low
+	// to high, with 0 <= low <= high, and returns a string result.
+	StringRangeReducer func(low, high int) string
+
+	// An ErrStringRangeReducer is a function that receives a range from
+	// low to high, with 0 <= low <= high, and returns a string result,
+	// and an error value or nil.
+	ErrStringRangeReducer func(low, high int) (string, error)
+
+	// A StringPairReducer is function that receives two string values
+	// and returns a string result.
+	StringPairReducer func(x, y string) string
+
+	// An ErrStringPairReducer is a function that receives two string
+	// values and returns a string result, and an error value or nil.
+	ErrStringPairReducer func(x, y string) (string, error)
 )
 
 /*

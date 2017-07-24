@@ -23,13 +23,23 @@ the range function for each of these subranges in parallel. RangeAnd
 and RangeOr additionally combine the boolean return values of the
 range predicates.
 
-ErrRange, ErrRangeAnd, and ErrRangeOr are like Range, RangeAnd, and
-RangeOr, except that the functions they invoke in parallel can
-additionally also return error values, which are combined in a
-similary way as by ErrDo, ErrAnd, and ErrOr.
+RangeReduce is similar to RangeAnd and RangeOr, except that the
+partial results are of type interface{} instead of bool, and the
+partial results are combined using a function that is explicitly
+passed as a parameter.  IntRangeReduce, Float64RangeReduce, and
+StringRangeReduce can be used in case it is known that the partial
+results are of type int, float64, or string respectively.
 
-Range, ErrRange, RangeAnd, ErrRangeAnd, RangeOr, and ErrRangeOr are
-useful for example for expressing parallel algorithms over slices.
+ErrRange, ErrRangeAnd, ErrRangeOr, ErrRangeReduce, ErrIntRangeReduce,
+ErrFloat64RangeReduce, and ErrStringRangeReduce are like Range,
+RangeAnd, RangeOr, RangeReduce, IntRangeReduce, Float64RangeReduce,
+and StringRangeReduce, except that the functions they invoke in
+parallel can additionally also return error values, which are combined
+in a similary way as by ErrDo, ErrAnd, and ErrOr.
+
+Range, RangeAnd, RangeOr, RangeReduce and its variants that deal with
+errors and/or are specialized for particular result types are useful
+for example for expressing parallel algorithms over slices.
 
 All of the functions described above also take care of dealing with
 panics: If one or more of the functions invoked in parallel panics,
@@ -746,6 +756,526 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 					err = err0
 				} else {
 					err = err1
+				}
+				return
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+RangeReduce receives a range, a batch count, a RangeReducer, and a
+PairReducer function, divides the range into batches, and invokes the
+range reducer for each of these batches in parallel. The results of
+the range reducer invocations are then combined by repeated
+invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+RangeReduce returns only when all range reducers and pair reducers
+have terminated.
+
+RangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and RangeReduce eventually panics with
+the left-most recovered panic value.
+*/
+func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairReducer) interface{} {
+	var recur func(int, int, int) interface{}
+	recur = func(low, high, n int) (result interface{}) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right interface{}
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right = recur(mid, high, n-half)
+				}()
+				left = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return pair(left, right)
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+ErrRangeReduce receives a range, a batch count, an ErrRangeReducer,
+and an ErrPairReducer function, divides the range into batches, and
+invokes the range reducer for each of these batches in parallel. The
+results of the range reducer invocations are then combined by repeated
+invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+ErrRangeReduce returns only when all range reducers and pair reducers
+have terminated. ErrRangeReduce also returns the left-most error value
+that is different from nil as a second return value.
+
+ErrRangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and ErrRangeReduce eventually panics
+with the left-most recovered panic value.
+*/
+func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.ErrPairReducer) (interface{}, error) {
+	var recur func(int, int, int) (interface{}, error)
+	recur = func(low, high, n int) (result interface{}, err error) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right interface{}
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right, err1 = recur(mid, high, n-half)
+				}()
+				left, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				if err0 != nil {
+					err = err0
+				} else if err1 != nil {
+					err = err1
+				} else {
+					result, err = pair(left, right)
+				}
+				return
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+IntRangeReduce receives a range, a batch count, an IntRangeReducer,
+and an IntPairReducer function, divides the range into batches, and
+invokes the range reducer for each of these batches in parallel. The
+results of the range reducer invocations are then combined by repeated
+invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+RangeReduce returns only when all range reducers and pair reducers
+have terminated.
+
+IntRangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and IntRangeReduce eventually panics
+with the left-most recovered panic value.
+*/
+func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.IntPairReducer) int {
+	var recur func(int, int, int) int
+	recur = func(low, high, n int) (result int) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right int
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right = recur(mid, high, n-half)
+				}()
+				left = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return pair(left, right)
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+ErrIntRangeReduce receives a range, a batch count, an
+ErrIntRangeReducer, and an ErrIntPairReducer function, divides the
+range into batches, and invokes the range reducer for each of these
+batches in parallel. The results of the range reducer invocations are
+then combined by repeated invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+ErrIntRangeReduce returns only when all range reducers and pair
+reducers have terminated. ErrIntRangeReduce also returns the left-most
+error value that is different from nil as a second return value.
+
+ErrIntRangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and ErrIntRangeReduce eventually panics
+with the left-most recovered panic value.
+*/
+func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair pargo.ErrIntPairReducer) (int, error) {
+	var recur func(int, int, int) (int, error)
+	recur = func(low, high, n int) (result int, err error) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right int
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right, err1 = recur(mid, high, n-half)
+				}()
+				left, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				if err0 != nil {
+					err = err0
+				} else if err1 != nil {
+					err = err1
+				} else {
+					result, err = pair(left, right)
+				}
+				return
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+Float64RangeReduce receives a range, a batch count, a
+Float64RangeReducer, and a Float64PairReducer function, divides the
+range into batches, and invokes the range reducer for each of these
+batches in parallel. The results of the range reducer invocations are
+then combined by repeated invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+RangeReduce returns only when all range reducers and pair reducers
+have terminated.
+
+Float64RangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and Float64RangeReduce eventually
+panics with the left-most recovered panic value.
+*/
+func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair pargo.Float64PairReducer) float64 {
+	var recur func(int, int, int) float64
+	recur = func(low, high, n int) (result float64) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right float64
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right = recur(mid, high, n-half)
+				}()
+				left = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return pair(left, right)
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+ErrFloat64RangeReduce receives a range, a batch count, an
+ErrFloat64RangeReducer, and an ErrFloat64PairReducer function, divides
+the range into batches, and invokes the range reducer for each of
+these batches in parallel. The results of the range reducer
+invocations are then combined by repeated invocations of the pair
+reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+ErrFloat64RangeReduce returns only when all range reducers and pair
+reducers have terminated. ErrFloat64RangeReduce also returns the
+left-most error value that is different from nil as a second return
+value.
+
+ErrFloat64RangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and ErrFloat64RangeReduce eventually
+panics with the left-most recovered panic value.
+*/
+func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer, pair pargo.ErrFloat64PairReducer) (float64, error) {
+	var recur func(int, int, int) (float64, error)
+	recur = func(low, high, n int) (result float64, err error) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right float64
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right, err1 = recur(mid, high, n-half)
+				}()
+				left, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				if err0 != nil {
+					err = err0
+				} else if err1 != nil {
+					err = err1
+				} else {
+					result, err = pair(left, right)
+				}
+				return
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+StringRangeReduce receives a range, a batch count, a
+StringRangeReducer, and a StringPairReducer function, divides the
+range into batches, and invokes the range reducer for each of these
+batches in parallel. The results of the range reducer invocations are
+then combined by repeated invocations of the pair reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+RangeReduce returns only when all range reducers and pair reducers
+have terminated.
+
+StringRangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and StringRangeReduce eventually panics
+with the left-most recovered panic value.
+*/
+func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair pargo.StringPairReducer) string {
+	var recur func(int, int, int) string
+	recur = func(low, high, n int) (result string) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right string
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right = recur(mid, high, n-half)
+				}()
+				left = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				return pair(left, right)
+			}
+		default:
+			panic(fmt.Sprintf("invalid number of batches: %v", n))
+		}
+	}
+	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+}
+
+/*
+ErrStringRangeReduce receives a range, a batch count, an
+ErrStringRangeReducer, and an ErrStringPairReducer function, divides
+the range into batches, and invokes the range reducer for each of
+these batches in parallel. The results of the range reducer
+invocations are then combined by repeated invocations of the pair
+reducer.
+
+The range is specified by a low and high integer, with low <=
+high. The batches are determined by dividing up the size of the range
+(high - low) by n. If n is 0, a reasonable default is used that takes
+runtime.GOMAXPROCS(0) into account.
+
+The range reducer is invoked for each batch in its own goroutine, and
+ErrStringRangeReduce returns only when all range reducers and pair
+reducers have terminated. ErrStringRangeReduce also returns the
+left-most error value that is different from nil as a second return
+value.
+
+ErrStringRangeReduce panics if high < low, or if n < 0.
+
+If one or more range predicate invocations panic, the corresponding
+goroutines recover the panics, and ErrStringRangeReduce eventually
+panics with the left-most recovered panic value.
+*/
+func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, pair pargo.ErrStringPairReducer) (string, error) {
+	var recur func(int, int, int) (string, error)
+	recur = func(low, high, n int) (result string, err error) {
+		switch {
+		case n == 1:
+			return reduce(low, high)
+		case n > 1:
+			batchSize := ((high - low - 1) / n) + 1
+			half := n / 2
+			mid := low + batchSize*half
+			if mid >= half {
+				return reduce(low, high)
+			} else {
+				var left, right string
+				var err0, err1 error
+				var p interface{}
+				var wg sync.WaitGroup
+				wg.Add(1)
+				go func() {
+					defer func() {
+						wg.Done()
+						p = recover()
+					}()
+					right, err1 = recur(mid, high, n-half)
+				}()
+				left, err0 = recur(low, mid, half)
+				wg.Wait()
+				if p != nil {
+					panic(p)
+				}
+				if err0 != nil {
+					err = err0
+				} else if err1 != nil {
+					err = err1
+				} else {
+					result, err = pair(left, right)
 				}
 				return
 			}
