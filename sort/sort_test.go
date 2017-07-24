@@ -1,6 +1,7 @@
 package sort
 
 import (
+	"bytes"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -90,6 +91,105 @@ func TestSort(t *testing.T) {
 		By(func(i, j int) bool { return i < j }).ParallelSort(s3)
 		if !reflect.DeepEqual(s1, s3) {
 			t.Errorf("Parallel sort incorrect.")
+		}
+	})
+}
+
+func TestIntSort(t *testing.T) {
+	orgSlice := makeRandomSlice(100*0x6000, 100*100*0x6000)
+	s1 := make([]int, len(orgSlice))
+	s2 := make([]int, len(orgSlice))
+	s3 := make([]int, len(orgSlice))
+	copy(s1, orgSlice)
+	copy(s2, orgSlice)
+	copy(s3, orgSlice)
+
+	sort.Ints(s1)
+
+	t.Run("ParallelStableSort IntSlice", func(t *testing.T) {
+		StableSort(IntSlice(s2))
+		if !reflect.DeepEqual(s1, s2) {
+			t.Errorf("Parallel stable sort on IntSlice incorrect.")
+		}
+	})
+
+	t.Run("ParallelSort IntSlice", func(t *testing.T) {
+		Sort(IntSlice(s3))
+		if !reflect.DeepEqual(s1, s3) {
+			t.Errorf("Parallel sort on IntSlice incorrect.")
+		}
+	})
+}
+
+func makeRandomFloat64Slice(size int) []float64 {
+	result := make([]float64, size)
+	for i := 0; i < size; i++ {
+		result[i] = rand.NormFloat64()
+	}
+	return result
+}
+
+func TestFloat64Sort(t *testing.T) {
+	orgSlice := makeRandomFloat64Slice(100 * 0x6000)
+	s1 := make([]float64, len(orgSlice))
+	s2 := make([]float64, len(orgSlice))
+	s3 := make([]float64, len(orgSlice))
+	copy(s1, orgSlice)
+	copy(s2, orgSlice)
+	copy(s3, orgSlice)
+
+	sort.Float64s(s1)
+
+	t.Run("ParallelStableSort Float64Slice", func(t *testing.T) {
+		StableSort(Float64Slice(s2))
+		if !reflect.DeepEqual(s1, s2) {
+			t.Errorf("Parallel stable sort on Float64Slice incorrect.")
+		}
+	})
+
+	t.Run("ParallelSort Float64Slice", func(t *testing.T) {
+		Sort(Float64Slice(s3))
+		if !reflect.DeepEqual(s1, s3) {
+			t.Errorf("Parallel sort on Float64Slice incorrect.")
+		}
+	})
+}
+
+func makeRandomStringSlice(size, lenlimit int, limit int32) []string {
+	result := make([]string, size)
+	for i := 0; i < size; i++ {
+		var buf bytes.Buffer
+		len := rand.Intn(lenlimit)
+		for j := 0; j < len; j++ {
+			buf.WriteRune(rand.Int31n(limit))
+		}
+		result[i] = buf.String()
+	}
+	return result
+}
+
+func TestStringSort(t *testing.T) {
+	orgSlice := makeRandomStringSlice(100*0x6000, 256, 16384)
+	s1 := make([]string, len(orgSlice))
+	s2 := make([]string, len(orgSlice))
+	s3 := make([]string, len(orgSlice))
+	copy(s1, orgSlice)
+	copy(s2, orgSlice)
+	copy(s3, orgSlice)
+
+	sort.Strings(s1)
+
+	t.Run("ParallelStableSort StringSlice", func(t *testing.T) {
+		StableSort(StringSlice(s2))
+		if !reflect.DeepEqual(s1, s2) {
+			t.Errorf("Parallel stable sort on StringSlice incorrect.")
+		}
+	})
+
+	t.Run("ParallelSort StringSlice", func(t *testing.T) {
+		Sort(StringSlice(s3))
+		if !reflect.DeepEqual(s1, s3) {
+			t.Errorf("Parallel sort on StringSlice incorrect.")
 		}
 	})
 }
