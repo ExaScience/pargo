@@ -46,7 +46,7 @@ type (
 	}
 )
 
-func binarySearch(x int, T *sorter, p, r int) int {
+func binarySearchEq(x int, T *sorter, p, r int) int {
 	low, high := p, r+1
 	if low > high {
 		return low
@@ -62,45 +62,82 @@ func binarySearch(x int, T *sorter, p, r int) int {
 	return high
 }
 
-func sMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
-	for p2 <= r2 {
-		i := p1
-		for (i <= r1) && !T.less(p2, i) {
-			i++
-		}
-		len := i - p1
-		A.assign(p3, p1, len)
-		p3 += len
-		p1, p2 = p2, i
-		r1, r2 = r2, r1
+func binarySearchNeq(x int, T *sorter, p, r int) int {
+	low, high := p, r+1
+	if low > high {
+		return low
 	}
-	if p1 <= r1 {
-		len := r1 + 1 - p1
-		A.assign(p3, p1, len)
+	for low < high {
+		mid := (low + high) / 2
+		if T.less(x, mid) {
+			high = mid
+		} else {
+			low = mid + 1
+		}
+	}
+	return high
+}
+
+func sMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
+	for {
+		q1 := p1
+		for (p1 <= r1) && !T.less(p2, p1) {
+			p1++
+		}
+		n1 := p1 - q1
+		A.assign(p3, q1, n1)
+		p3 += n1
+
+		if p1 > r1 {
+			A.assign(p3, p2, r2+1-p2)
+			return
+		}
+
+		q2 := p2
+		for (p2 <= r2) && T.less(p2, p1) {
+			p2++
+		}
+		n2 := p2 - q2
+		A.assign(p3, q2, n2)
+		p3 += n2
+
+		if p2 > r2 {
+			A.assign(p3, p1, r1+1-p1)
+			return
+		}
 	}
 }
 
 func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 	n1 := r1 - p1 + 1
 	n2 := r2 - p2 + 1
-	if n1 < n2 {
-		p1, p2 = p2, p1
-		r1, r2 = r2, r1
-		n1, n2 = n2, n1
-	}
-	if n1 == 0 {
-		return
-	}
 	if (n1 + n2) < msortGrainSize {
 		sMerge(T, p1, r1, p2, r2, A, p3)
-	} else {
+		return
+	}
+	if n1 > n2 {
+		if n1 == 0 {
+			return
+		}
 		q1 := (p1 + r1) / 2
-		q2 := binarySearch(q1, T, p2, r2)
+		q2 := binarySearchEq(q1, T, p2, r2)
 		q3 := p3 + (q1 - p1) + (q2 - p2)
 		A.assign(q3, q1, 1)
 		parallel.Do(
 			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
 			func() { pMerge(T, q1+1, r1, q2, r2, A, q3+1) },
+		)
+	} else {
+		if n2 == 0 {
+			return
+		}
+		q2 := (p2 + r2) / 2
+		q1 := binarySearchNeq(q2, T, p1, r1)
+		q3 := p3 + (q1 - p1) + (q2 - p2)
+		A.assign(q3, q2, 1)
+		parallel.Do(
+			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
+			func() { pMerge(T, q1, r1, q2+1, r2, A, q3+1) },
 		)
 	}
 }
