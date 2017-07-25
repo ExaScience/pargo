@@ -146,6 +146,8 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 StableSort uses a parallel implementation of merge sort, also known as
 cilksort.
 
+StableSort is only stable if data's SequentialSort method is stable.
+
 StableSort is good for large core counts and large collection sizes,
 but needs a shallow copy of the data collection as additional
 temporary memory.
