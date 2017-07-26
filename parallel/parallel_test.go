@@ -79,3 +79,57 @@ func ExampleErrDo() {
 
 	result, err := parallelFib(-1)
 }
+
+func ExampleIntRangeReduce() {
+	numDivisors := func(n int) int {
+		return parallel.IntRangeReduce(
+			1, n+1, runtime.GOMAXPROCS(0),
+			func(low, high int) int {
+				var sum int
+				for i := low; i < high; i++ {
+					if (n % i) == 0 {
+						sum++
+					}
+				}
+				return sum
+			},
+			func(x, y int) int { return x + y },
+		)
+	}
+}
+
+func ExampleRangeReduce() {
+	findPrimes := func(n int) []int {
+		return parallel.RangeReduce(
+			2, n, 4*runtime.GOMAXPROCS(0),
+			func(low, high int) interface{} {
+				var slice []int
+				for i := low; i < high; i++ {
+					if numDivisors(i) == 2 { // see IntRangeReduce example
+						slice = append(slice, i)
+					}
+				}
+				return slice
+			},
+			func(x, y interface{}) interface{} {
+				return append(x.([]int), y.([]int)...)
+			},
+		).([]int)
+	}
+}
+
+func ExampleFloat64RangeReduce() {
+	sumFloat64s := func(f []float64) float64 {
+		return parallel.Float64RangeReduce(
+			0, len(f), runtime.GOMAXPROCS(0),
+			func(low, high int) float64 {
+				var sum float64
+				for i := low; i < high; i++ {
+					sum += f[i]
+				}
+				return sum
+			},
+			func(x, y float64) float64 { return x + y },
+		)
+	}
+}
