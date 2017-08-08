@@ -80,6 +80,11 @@ func binarySearchNeq(x int, T *sorter, p, r int) int {
 
 func sMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 	for {
+		if p2 > r2 {
+			A.assign(p3, p1, r1+1-p1)
+			return
+		}
+
 		q1 := p1
 		for (p1 <= r1) && !T.less(p2, p1) {
 			p1++
@@ -100,11 +105,6 @@ func sMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 		n2 := p2 - q2
 		A.assign(p3, q2, n2)
 		p3 += n2
-
-		if p2 > r2 {
-			A.assign(p3, p1, r1+1-p1)
-			return
-		}
 	}
 }
 
