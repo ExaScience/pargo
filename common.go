@@ -37,11 +37,6 @@ practical overview of the underlying concepts.
 */
 package pargo
 
-import (
-	"fmt"
-	"runtime"
-)
-
 type (
 	// A Thunk is a function that neither receives nor returns any
 	// parameters.
@@ -144,29 +139,3 @@ type (
 	// values and returns a string result, and an error value or nil.
 	ErrStringPairReducer func(x, y string) (string, error)
 )
-
-/*
-ComputeNofBatches is an internal function used by the parallel.Range,
-speculative.Range, and sequential.Range groups of functions.
-*/
-func ComputeNofBatches(low, high, n int) (batches int) {
-	switch size := high - low; {
-	case size > 0:
-		switch {
-		case n == 0:
-			batches = 2 * runtime.GOMAXPROCS(0)
-		case n > 0:
-			batches = n
-		default:
-			panic(fmt.Sprintf("invalid number of batches: %v", n))
-		}
-		if batches > size {
-			batches = size
-		}
-	case size == 0:
-		batches = 1
-	default:
-		panic(fmt.Sprintf("invalid range: %v:%v", low, high))
-	}
-	return
-}

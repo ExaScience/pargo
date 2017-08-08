@@ -38,6 +38,7 @@ import (
 	"sync"
 
 	"github.com/exascience/pargo"
+	"github.com/exascience/pargo/internal"
 )
 
 /*
@@ -403,7 +404,7 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -465,7 +466,7 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -527,7 +528,7 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -602,7 +603,7 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -677,7 +678,7 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -750,7 +751,7 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -823,7 +824,7 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -897,7 +898,7 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
 /*
@@ -971,5 +972,5 @@ func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, 
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
 	}
-	return recur(low, high, pargo.ComputeNofBatches(low, high, n))
+	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
