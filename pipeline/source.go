@@ -78,7 +78,7 @@ type chanSource struct {
 func newChanSource(value reflect.Value) *chanSource {
 	zeroElem := value.Type().Elem()
 	return &chanSource{
-		cases: []reflect.SelectCase{{reflect.SelectRecv, value, reflect.Zero(zeroElem)}},
+		cases: []reflect.SelectCase{{Dir: reflect.SelectRecv, Chan: value, Send: reflect.Zero(zeroElem)}},
 		zero:  reflect.Zero(reflect.SliceOf(zeroElem)),
 	}
 }
@@ -90,7 +90,7 @@ func (src *chanSource) Err() error {
 var doneZero struct{}
 
 func (src *chanSource) Prepare(ctx context.Context) (size int) {
-	src.cases = append(src.cases, reflect.SelectCase{reflect.SelectRecv, reflect.ValueOf(ctx.Done()), reflect.ValueOf(doneZero)})
+	src.cases = append(src.cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done()), Send: reflect.ValueOf(doneZero)})
 	return -1
 }
 

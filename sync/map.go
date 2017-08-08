@@ -248,8 +248,8 @@ value for any key is stored or deleted concurrently, Range may reflect
 any mapping for that key from any point during the Range call.
 */
 func (m *Map) Range(f func(key, value interface{}) bool) {
-	for _, split := range m.splits {
-		if !split.splitRange(f) {
+	for i := range m.splits {
+		if !m.splits[i].splitRange(f) {
 			return
 		}
 	}
