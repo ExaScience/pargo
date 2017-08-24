@@ -3,33 +3,8 @@ Package speculative provides functions for expressing parallel
 algorithms, similar to the functions in package parallel, except that
 the implementations here terminate early when they can.
 
-And, Or, RangeAnd, and RangeOr terminate early if the final return
-value is known early (if any of the predicates invoked in parallel
-returns false for And, or true for Or).
-
-ErrDo, ErrRange, ErrRangeReduce, ErrIntRangeReduce,
-ErrFloat64RangeReduce, and ErrStringRangeReduce terminate early if any
-of the functions invoked in parallel returns an error value different
-from nil.
-
-ErrAnd, ErrOr, ErrRangeAnd, and ErrRangeOr terminate early if the
-final return value is known early, or if any predicate returns a
-non-nil error value.
-
-Additionally, all of these functions also handle panics, similar to
-the functions in package parallel. However, panics may not propagate
-to the invoking goroutine in case they terminate early because of a
-known return value or a non-nil error value. See the documentations of
-the functions for more precise details of the semantics.
-
-None of the functions described above stop the execution of invoked
-functions that may still be running in parallel in case of early
-termination.  To ensure that compute resources are freed up in such
-cases, user programs need to use some other safe form of communication
-to gracefully stop their execution, for example the cancelation
-feature of the context package of Go's standard library. (Any such
-additional communication is likely to add additional performance
-overhead, which is why this is not done by default.)
+See https://github.com/ExaScience/pargo/wiki/TaskParallelism
+for a general overview.
 */
 package speculative
 
@@ -346,7 +321,8 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 /*
 ErrRange receives a range, a batch count, and an ErrRangeFunc
 function, divides the range into batches, and invokes the range
-function for each of these batches in parallel.
+function for each of these batches in parallel, covering the half-open
+interval from low to high, including low but excluding high.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -410,7 +386,8 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 /*
 RangeAnd receives a range, a batch count, and a RangePredicate
 function, divides the range into batches, and invokes the range
-predicate for each of these batches in parallel.
+predicate for each of these batches in parallel, covering the
+half-open interval from low to high, including low but excluding high.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -472,7 +449,8 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 /*
 RangeOr receives a range, a batch count, and a RangePredicate
 function, divides the range into batches, and invokes the range
-predicate for each of these batches in parallel.
+predicate for each of these batches in parallel, covering the
+half-open interval from low to high, including low but excluding high.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -534,7 +512,8 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 /*
 ErrRangeAnd receives a range, a batch count, and an ErrRangePredicate
 function, divides the range into batches, and invokes the range
-predicate for each of these batches in parallel.
+predicate for each of these batches in parallel, covering the
+half-open interval from low to high, including low but excluding high.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -609,7 +588,8 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 /*
 ErrRangeOr receives a range, a batch count, and an ErrRangePredicate
 function, divides the range into batches, and invokes the range
-predicate for each of these batches in parallel.
+predicate for each of these batches in parallel, covering the
+half-open interval from low to high, including low but excluding high.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -684,9 +664,10 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 /*
 ErrRangeReduce receives a range, a batch count, an ErrRangeReducer,
 and an ErrPairReducer function, divides the range into batches, and
-invokes the range reducer for each of these batches in parallel. The
-results of the range reducer invocations are then combined by repeated
-invocations of the pair reducer.
+invokes the range reducer for each of these batches in parallel,
+covering the half-open interval from low to high, including low but
+excluding high. The results of the range reducer invocations are then
+combined by repeated invocations of the pair reducer.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -758,8 +739,10 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 ErrIntRangeReduce receives a range, a batch count, an
 ErrIntRangeReducer, and an ErrIntPairReducer function, divides the
 range into batches, and invokes the range reducer for each of these
-batches in parallel. The results of the range reducer invocations are
-then combined by repeated invocations of the pair reducer.
+batches in parallel, covering the half-open interval from low to high,
+including low but excluding high. The results of the range reducer
+invocations are then combined by repeated invocations of the pair
+reducer.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -831,9 +814,10 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 ErrFloat64RangeReduce receives a range, a batch count, an
 ErrFloat64RangeReducer, and an ErrFloat64PairReducer function, divides
 the range into batches, and invokes the range reducer for each of
-these batches in parallel. The results of the range reducer
-invocations are then combined by repeated invocations of the pair
-reducer.
+these batches in parallel, covering the half-open interval from low to
+high, including low but excluding high. The results of the range
+reducer invocations are then combined by repeated invocations of the
+pair reducer.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range
@@ -905,9 +889,10 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 ErrStringRangeReduce receives a range, a batch count, an
 ErrStringRangeReducer, and an ErrStringPairReducer function, divides
 the range into batches, and invokes the range reducer for each of
-these batches in parallel. The results of the range reducer
-invocations are then combined by repeated invocations of the pair
-reducer.
+these batches in parallel, covering the half-open interval from low to
+high, including low but excluding high. The results of the range
+reducer invocations are then combined by repeated invocations of the
+pair reducer.
 
 The range is specified by a low and high integer, with low <=
 high. The batches are determined by dividing up the size of the range

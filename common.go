@@ -6,16 +6,19 @@ programming, and this library provides convenience functionality to
 turn otherwise sequential algorithms into parallel algorithms, with
 the goal to improve performance.
 
+For documentation that provides a more structured overview than is
+possible with Godoc, see the wiki at https://github.com/exascience/pargo/wiki
+
 Pargo provides the following subpackages:
 
 pargo/parallel provides simple functions for executing series of
 thunks or predicates, as well as thunks, predicates, or reducers over
-ranges in parallel.
+ranges in parallel. See also https://github.com/ExaScience/pargo/wiki/TaskParallelism
 
 pargo/speculative provides speculative implementations of most of
 the functions from pargo/parallel. These implementations not only
 execute in parallel, but also attempt to terminate early as soon as
-the final result is known.
+the final result is known. See also https://github.com/ExaScience/pargo/wiki/TaskParallelism
 
 pargo/sequential provides sequential implementations of all
 functions from pargo/parallel, for testing and debugging purposes.
@@ -47,11 +50,14 @@ type (
 	ErrThunk func() error
 
 	// A RangeFunc is a function that receives a range from low to high,
-	// with 0 <= low <= high.
+	// with 0 <= low <= high. It is expected to cover the half-open
+	// interval from low to high, including low but excluding high.
 	RangeFunc func(low, high int)
 
 	// An ErrRangeFunc is a function that receives a range from low to
 	// high, with 0 <= low <= high, and returns an error value or nil.
+	// It is expected to cover the half-open interval from low to high,
+	// including low but excluding high.
 	ErrRangeFunc func(low, high int) error
 
 	// A Predicate is a function that receives no paramaters and returns
@@ -63,21 +69,27 @@ type (
 	ErrPredicate func() (bool, error)
 
 	// A RangePredicate is a function that receives a range from low to
-	// high, with 0 <= low <= high, and returns a bool.
+	// high, with 0 <= low <= high, and returns a bool. It is expected
+	// to cover the half-open interval from low to high, including low
+	// but excluding high.
 	RangePredicate func(low, high int) bool
 
 	// An ErrRangePredicate is a function that receives a range from low
 	// to high, with 0 <= low <= high, and returns a bool, and an error
-	// value or nil.
+	// value or nil. It is expected to cover the half-open interval from
+	// low to high, including low but excluding high.
 	ErrRangePredicate func(low, high int) (bool, error)
 
 	// A RangeReducer is a function that receives a range from low to
-	// high, with 0 <= low <= high, and returns a result.
+	// high, with 0 <= low <= high, and returns a result. It is expected
+	// to cover the half-open interval from low to high, including low
+	// but excluding high.
 	RangeReducer func(low, high int) interface{}
 
 	// An ErrRangeReducer is a function that receives a range from low
 	// to high, with 0 <= low <= high, and returns a result, and an
-	// error value or nil.
+	// error value or nil. It is expected to cover the half-open
+	// interval from low to high, including low but excluding high.
 	ErrRangeReducer func(low, high int) (interface{}, error)
 
 	// A PairReducer is function that receives two values and returns a
@@ -89,12 +101,15 @@ type (
 	ErrPairReducer func(x, y interface{}) (interface{}, error)
 
 	// An IntRangeReducer is a function that receives a range from low
-	// to high, with 0 <= low <= high, and returns an int result.
+	// to high, with 0 <= low <= high, and returns an int result. It is
+	// expected to cover the half-open interval from low to high,
+	// including low but excluding high.
 	IntRangeReducer func(low, high int) int
 
 	// An ErrIntRangeReduce is a function that receives a range from low
 	// to high, with 0 <= low <= high, and returns an int result, and an
-	// error value or nil.
+	// error value or nil. It is expected to cover the half-open
+	// interval from low to high, including low but excluding high.
 	ErrIntRangeReducer func(low, high int) (int, error)
 
 	// An IntPairReducer is function that receives two int values and
@@ -106,12 +121,16 @@ type (
 	ErrIntPairReducer func(x, y int) (int, error)
 
 	// A Float64RangeReducer is a function that receives a range from
-	// low to high, with 0 <= low <= high, and returns a float64 result.
+	// low to high, with 0 <= low <= high, and returns a float64
+	// result. It is expected to cover the half-open interval from low
+	// to high, including low but excluding high.
 	Float64RangeReducer func(low, high int) float64
 
-	// An ErrFloat64RangeReduce is a function that receives a range from
-	// low to high, with 0 <= low <= high, and returns a float64 result,
-	// and an error value or nil.
+	// An ErrFloat64RangeReducer is a function that receives a range
+	// from low to high, with 0 <= low <= high, and returns a float64
+	// result, and an error value or nil. It is expected to cover the
+	// half-open interval from low to high, including low but excluding
+	// high.
 	ErrFloat64RangeReducer func(low, high int) (float64, error)
 
 	// A Float64PairReducer is function that receives two float64 values
@@ -123,12 +142,15 @@ type (
 	ErrFloat64PairReducer func(x, y float64) (float64, error)
 
 	// A StringRangeReducer is a function that receives a range from low
-	// to high, with 0 <= low <= high, and returns a string result.
+	// to high, with 0 <= low <= high, and returns a string result. It
+	// is expected to cover the half-open interval from low to high,
+	// including low but excluding high.
 	StringRangeReducer func(low, high int) string
 
 	// An ErrStringRangeReducer is a function that receives a range from
 	// low to high, with 0 <= low <= high, and returns a string result,
-	// and an error value or nil.
+	// and an error value or nil. It is expected to cover the half-open
+	// interval from low to high, including low but excluding high.
 	ErrStringRangeReducer func(low, high int) (string, error)
 
 	// A StringPairReducer is function that receives two string values
