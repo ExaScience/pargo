@@ -9,3 +9,4 @@ turn otherwise sequential algorithms into parallel algorithms, with
 the goal to improve performance.
 
 Documentation: [http://godoc.org/github.com/ExaScience/pargo](http://godoc.org/github.com/ExaScience/pargo)
+and [http://github.com/ExaScience/pargo/wiki](http://github.com/ExaScience/pargo/wiki)
