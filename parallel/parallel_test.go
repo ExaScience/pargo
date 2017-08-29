@@ -1,6 +1,12 @@
-package parallel
+package parallel_test
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"runtime"
+
+	"github.com/exascience/pargo/parallel"
+)
 
 func ExampleDo() {
 	var fib func(int) int
@@ -28,7 +34,10 @@ func ExampleDo() {
 		}
 	}
 
-	result := parallelFib(30)
+	fmt.Println(fib(30) == parallelFib(30))
+
+	// Output:
+	// true
 }
 
 func ExampleErrDo() {
@@ -77,7 +86,14 @@ func ExampleErrDo() {
 		return
 	}
 
-	result, err := parallelFib(-1)
+	if result, err := parallelFib(-1); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(result)
+	}
+
+	// Output:
+	// Invalid argument.
 }
 
 func ExampleIntRangeReduce() {
@@ -96,6 +112,27 @@ func ExampleIntRangeReduce() {
 			func(x, y int) int { return x + y },
 		)
 	}
+
+	fmt.Println(numDivisors(12))
+
+	// Output:
+	// 6
+}
+
+func numDivisors(n int) int {
+	return parallel.IntRangeReduce(
+		1, n+1, runtime.GOMAXPROCS(0),
+		func(low, high int) int {
+			var sum int
+			for i := low; i < high; i++ {
+				if (n % i) == 0 {
+					sum++
+				}
+			}
+			return sum
+		},
+		func(x, y int) int { return x + y },
+	)
 }
 
 func ExampleRangeReduce() {
@@ -116,6 +153,11 @@ func ExampleRangeReduce() {
 			},
 		).([]int)
 	}
+
+	fmt.Println(findPrimes(20))
+
+	// Output:
+	// [2 3 5 7 11 13 17 19]
 }
 
 func ExampleFloat64RangeReduce() {
@@ -132,4 +174,9 @@ func ExampleFloat64RangeReduce() {
 			func(x, y float64) float64 { return x + y },
 		)
 	}
+
+	fmt.Println(sumFloat64s([]float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
+
+	// Output:
+	// 55
 }

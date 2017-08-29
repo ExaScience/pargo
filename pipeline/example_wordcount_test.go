@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"runtime"
+	"strings"
 
 	"github.com/exascience/pargo/pipeline"
+	"github.com/exascience/pargo/sort"
 	"github.com/exascience/pargo/sync"
 )
 
@@ -57,27 +58,36 @@ func WordCount(r io.Reader) *sync.Map {
 				}
 				return data
 			},
-			func() { fmt.Println() },
+			func() { fmt.Println(".") },
 		)),
 	)
 	p.Run()
 	return result
 }
 
-func Example_wourdCount() {
-	f, err := os.Open("test.txt")
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	counts := WordCount(f)
-	err = f.Close()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	counts.Range(func(key, value interface{}) bool {
-		fmt.Printf("%v: %v\n", key, value)
+func Example_wordCount() {
+	r := strings.NewReader("The big black bug bit the big black bear but the big black bear bit the big black bug back")
+	counts := WordCount(r)
+	words := make(sort.StringSlice, 0)
+	counts.Range(func(key, _ interface{}) bool {
+		words = append(words, string(key.(Word)))
 		return true
 	})
+	sort.Sort(words)
+	for _, word := range words {
+		count, _ := counts.Load(Word(word))
+		fmt.Println(word, count.(int))
+	}
+
+	// Output:
+	// The big black bug bit the bear but back .
+	// The 1
+	// back 1
+	// bear 2
+	// big 4
+	// bit 2
+	// black 4
+	// bug 2
+	// but 1
+	// the 3
 }
