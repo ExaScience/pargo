@@ -697,7 +697,7 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 			batchSize := ((high - low - 1) / n) + 1
 			half := n / 2
 			mid := low + batchSize*half
-			if mid >= half {
+			if mid >= high {
 				return reduce(low, high)
 			} else {
 				var left, right interface{}
@@ -772,7 +772,7 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 			batchSize := ((high - low - 1) / n) + 1
 			half := n / 2
 			mid := low + batchSize*half
-			if mid >= half {
+			if mid >= high {
 				return reduce(low, high)
 			} else {
 				var left, right int
@@ -847,7 +847,7 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 			batchSize := ((high - low - 1) / n) + 1
 			half := n / 2
 			mid := low + batchSize*half
-			if mid >= half {
+			if mid >= high {
 				return reduce(low, high)
 			} else {
 				var left, right float64
@@ -922,7 +922,7 @@ func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, 
 			batchSize := ((high - low - 1) / n) + 1
 			half := n / 2
 			mid := low + batchSize*half
-			if mid >= half {
+			if mid >= high {
 				return reduce(low, high)
 			} else {
 				var left, right string
