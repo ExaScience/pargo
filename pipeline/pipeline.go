@@ -31,6 +31,10 @@ filters can use side effects to generate results.
 
 Pipelines also support cancelation by way of the context package of
 Go's standard library.
+
+An application of pipelines can be found in the elPrep tool at
+https://github.com/exascience/elprep - specifically in
+https://github.com/ExaScience/elprep/blob/master/sam/filter-pipeline.go
 */
 package pipeline
 
