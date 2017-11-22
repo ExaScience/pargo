@@ -106,7 +106,7 @@ type (
 	// including low but excluding high.
 	IntRangeReducer func(low, high int) int
 
-	// An ErrIntRangeReduce is a function that receives a range from low
+	// An ErrIntRangeReducer is a function that receives a range from low
 	// to high, with 0 <= low <= high, and returns an int result, and an
 	// error value or nil. It is expected to cover the half-open
 	// interval from low to high, including low but excluding high.

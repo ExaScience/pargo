@@ -355,27 +355,26 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				var err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					err1 = recur(mid, high, n-half)
-				}()
-				if err0 := recur(low, mid, half); err0 != nil {
-					return err0
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				return err1
 			}
+			var err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
+				}()
+				err1 = recur(mid, high, n-half)
+			}()
+			if err0 := recur(low, mid, half); err0 != nil {
+				return err0
+			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			return err1
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -418,27 +417,26 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				var b1 bool
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					b1 = recur(mid, high, n-half)
-				}()
-				if !recur(low, mid, half) {
-					return false
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				return b1
 			}
+			var b1 bool
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
+				}()
+				b1 = recur(mid, high, n-half)
+			}()
+			if !recur(low, mid, half) {
+				return false
+			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			return b1
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -481,27 +479,26 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				var b1 bool
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					b1 = recur(mid, high, n-half)
-				}()
-				if recur(low, mid, half) {
-					return true
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				return b1
 			}
+			var b1 bool
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
+				}()
+				b1 = recur(mid, high, n-half)
+			}()
+			if recur(low, mid, half) {
+				return true
+			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			return b1
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -549,35 +546,34 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				var b0, b1 bool
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					b1, err1 = recur(mid, high, n-half)
-				}()
-				b0, err0 = recur(low, mid, half)
-				if !b0 || (err0 != nil) {
-					return b0, err0
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				result = b0 && b1
-				if err0 != nil {
-					err = err0
-				} else {
-					err = err1
-				}
-				return
 			}
+			var b0, b1 bool
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
+				}()
+				b1, err1 = recur(mid, high, n-half)
+			}()
+			b0, err0 = recur(low, mid, half)
+			if !b0 || (err0 != nil) {
+				return b0, err0
+			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			result = b0 && b1
+			if err0 != nil {
+				err = err0
+			} else {
+				err = err1
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -625,35 +621,34 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				var b0, b1 bool
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					b1, err1 = recur(mid, high, n-half)
-				}()
-				b0, err0 = recur(low, mid, half)
-				if b0 || (err0 != nil) {
-					return b0, err0
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				result = b0 || b1
-				if err0 != nil {
-					err = err0
-				} else {
-					err = err1
-				}
-				return
 			}
+			var b0, b1 bool
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
+				}()
+				b1, err1 = recur(mid, high, n-half)
+			}()
+			b0, err0 = recur(low, mid, half)
+			if b0 || (err0 != nil) {
+				return b0, err0
+			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			result = b0 || b1
+			if err0 != nil {
+				err = err0
+			} else {
+				err = err1
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -699,35 +694,34 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				var left, right interface{}
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					right, err1 = recur(mid, high, n-half)
+			}
+			var left, right interface{}
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
 				}()
-				left, err0 = recur(low, mid, half)
-				if err0 != nil {
-					err = err0
-					return
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
+				right, err1 = recur(mid, high, n-half)
+			}()
+			left, err0 = recur(low, mid, half)
+			if err0 != nil {
+				err = err0
 				return
 			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -774,35 +768,34 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				var left, right int
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					right, err1 = recur(mid, high, n-half)
+			}
+			var left, right int
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
 				}()
-				left, err0 = recur(low, mid, half)
-				if err0 != nil {
-					err = err0
-					return
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
+				right, err1 = recur(mid, high, n-half)
+			}()
+			left, err0 = recur(low, mid, half)
+			if err0 != nil {
+				err = err0
 				return
 			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -849,35 +842,34 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				var left, right float64
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					right, err1 = recur(mid, high, n-half)
+			}
+			var left, right float64
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
 				}()
-				left, err0 = recur(low, mid, half)
-				if err0 != nil {
-					err = err0
-					return
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
+				right, err1 = recur(mid, high, n-half)
+			}()
+			left, err0 = recur(low, mid, half)
+			if err0 != nil {
+				err = err0
 				return
 			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -924,35 +916,34 @@ func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, 
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				var left, right string
-				var err0, err1 error
-				var p interface{}
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						p = recover()
-					}()
-					right, err1 = recur(mid, high, n-half)
+			}
+			var left, right string
+			var err0, err1 error
+			var p interface{}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer func() {
+					wg.Done()
+					p = recover()
 				}()
-				left, err0 = recur(low, mid, half)
-				if err0 != nil {
-					err = err0
-					return
-				}
-				wg.Wait()
-				if p != nil {
-					panic(p)
-				}
-				if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
+				right, err1 = recur(mid, high, n-half)
+			}()
+			left, err0 = recur(low, mid, half)
+			if err0 != nil {
+				err = err0
 				return
 			}
+			wg.Wait()
+			if p != nil {
+				panic(p)
+			}
+			if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}

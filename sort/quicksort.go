@@ -9,9 +9,10 @@ import (
 const qsortGrainSize = 0x500
 
 /*
-A type, typically a collection, that satisfies sort.Sorter can be
-sorted by Sort in this package. The methods require that (ranges of)
-elements of the collection can be enumerated by integer indices.
+Sorter is a type, typically a collection, that satisfies sort.Sorter
+can be sorted by Sort in this package. The methods require that
+(ranges of) elements of the collection can be enumerated by integer
+indices.
 */
 type Sorter interface {
 	SequentialSorter

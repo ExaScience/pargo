@@ -11,10 +11,11 @@ import (
 )
 
 /*
-A type, typically a collection, that can be sequentially sorted. This
-is needed as a base case for the parallel sorting algorithms in this
-package. It is recommended to implement this interface by using the
-functions in the sort package of Go's standard library.
+SequentialSorter is a type, typically a collection, that can be
+sequentially sorted. This is needed as a base case for the parallel
+sorting algorithms in this package. It is recommended to implement
+this interface by using the functions in the sort package of Go's
+standard library.
 */
 type SequentialSorter interface {
 	// Sort the range that starts at index i and ends at index j. If the
@@ -70,6 +71,7 @@ Sorter, and StableSorter to []int, sorting in increasing order.
 */
 type IntSlice []int
 
+// SequentialSort implements the method of of the SequentialSorter interface.
 func (s IntSlice) SequentialSort(i, j int) {
 	sort.Stable(sort.IntSlice(s[i:j]))
 }
@@ -86,12 +88,14 @@ func (s IntSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// NewTemp implements the method of the StableSorter interface.
 func (s IntSlice) NewTemp() StableSorter {
 	return IntSlice(make([]int, len(s)))
 }
 
-func (this IntSlice) Assign(that StableSorter) func(i, j, len int) {
-	dst, src := this, that.(IntSlice)
+// Assign implements the method of the StableSorter interface.
+func (s IntSlice) Assign(source StableSorter) func(i, j, len int) {
+	dst, src := s, source.(IntSlice)
 	return func(i, j, len int) {
 		copy(dst[i:i+len], src[j:j+len])
 	}
@@ -112,6 +116,7 @@ Sorter, and StableSorter to []float64, sorting in increasing order.
 */
 type Float64Slice []float64
 
+// SequentialSort implements the method of the SequentialSorter interface.
 func (s Float64Slice) SequentialSort(i, j int) {
 	sort.Stable(sort.Float64Slice(s[i:j]))
 }
@@ -128,12 +133,14 @@ func (s Float64Slice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// NewTemp implements the method of the StableSorter interface.
 func (s Float64Slice) NewTemp() StableSorter {
 	return Float64Slice(make([]float64, len(s)))
 }
 
-func (this Float64Slice) Assign(that StableSorter) func(i, j, len int) {
-	dst, src := this, that.(Float64Slice)
+// Assign implements the method of the StableSorter interface.
+func (s Float64Slice) Assign(source StableSorter) func(i, j, len int) {
+	dst, src := s, source.(Float64Slice)
 	return func(i, j, len int) {
 		copy(dst[i:i+len], src[j:j+len])
 	}
@@ -154,6 +161,7 @@ Sorter, and StableSorter to []string, sorting in increasing order.
 */
 type StringSlice []string
 
+// SequentialSort implements the method of the SequentialSorter interface.
 func (s StringSlice) SequentialSort(i, j int) {
 	sort.Stable(sort.StringSlice(s[i:j]))
 }
@@ -170,12 +178,14 @@ func (s StringSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
+// NewTemp implements the method of the StableSorter interface.
 func (s StringSlice) NewTemp() StableSorter {
 	return StringSlice(make([]string, len(s)))
 }
 
-func (this StringSlice) Assign(that StableSorter) func(i, j, len int) {
-	dst, src := this, that.(StringSlice)
+// Assign implements the method of the StableSorter interface.
+func (s StringSlice) Assign(source StableSorter) func(i, j, len int) {
+	dst, src := s, source.(StringSlice)
 	return func(i, j, len int) {
 		copy(dst[i:i+len], src[j:j+len])
 	}

@@ -44,89 +44,87 @@ import (
 	"sync"
 )
 
-type (
-	/*
-	  A Node object represents a sequence of filters which are together
-	  executed either in encounter order, in arbitrary sequential order,
-	  or in parallel.
+/*
+A Node object represents a sequence of filters which are together
+executed either in encounter order, in arbitrary sequential order, or
+in parallel.
 
-	  The methods of this interface are typically not called by user
-	  programs, but rather implemented by specific node types and called
-	  by pipelines. Ordered, sequential, and parallel nodes are also
-	  implemented in this package, so that user programs are typically not
-	  concerned with Node methods at all.
-	*/
-	Node interface {
+The methods of this interface are typically not called by user
+programs, but rather implemented by specific node types and called by
+pipelines. Ordered, sequential, and parallel nodes are also
+implemented in this package, so that user programs are typically not
+concerned with Node methods at all.
+*/
+type Node interface {
 
-		// TryMerge tries to merge node with the current node by appending
-		// its filters to the filters of the current node, which succeeds
-		// if both nodes are either sequential or parallel. The return
-		// value merged indicates whether merging succeeded.
-		TryMerge(node Node) (merged bool)
+	// TryMerge tries to merge node with the current node by appending
+	// its filters to the filters of the current node, which succeeds
+	// if both nodes are either sequential or parallel. The return
+	// value merged indicates whether merging succeeded.
+	TryMerge(node Node) (merged bool)
 
-		// Begin informs this node that the pipeline is going to start to
-		// feed batches of data to this node. The pipeline, the index of
-		// this node among all the nodes in the pipeline, and the expected
-		// total size of all batches combined are passed as parameters.
-		//
-		// The dataSize parameter is either positive, in which case it
-		// indicates the expected total size of all batches that will
-		// eventually be passed to this node's Feed method, or it is
-		// negative, in which case the expected size is either unknown or
-		// too difficult to determine. The dataSize parameter is a pointer
-		// whose contents can be modified by Begin, for example if this
-		// node increases or decreases the total size for subsequent
-		// nodes, or if this node can change dataSize from an unknown to a
-		// known value, or vice versa, must change it from a known to an
-		// unknown value.
-		//
-		// A node may decide that, based on the given information, it will
-		// actually not need to see any of the batches that are normally
-		// going to be passed to it. In that case, it can return false as
-		// a result, and its Feed and End method will not be called
-		// anymore.  Otherwise, it should return true by default.
-		Begin(p *Pipeline, index int, dataSize *int) (keep bool)
+	// Begin informs this node that the pipeline is going to start to
+	// feed batches of data to this node. The pipeline, the index of
+	// this node among all the nodes in the pipeline, and the expected
+	// total size of all batches combined are passed as parameters.
+	//
+	// The dataSize parameter is either positive, in which case it
+	// indicates the expected total size of all batches that will
+	// eventually be passed to this node's Feed method, or it is
+	// negative, in which case the expected size is either unknown or
+	// too difficult to determine. The dataSize parameter is a pointer
+	// whose contents can be modified by Begin, for example if this
+	// node increases or decreases the total size for subsequent
+	// nodes, or if this node can change dataSize from an unknown to a
+	// known value, or vice versa, must change it from a known to an
+	// unknown value.
+	//
+	// A node may decide that, based on the given information, it will
+	// actually not need to see any of the batches that are normally
+	// going to be passed to it. In that case, it can return false as
+	// a result, and its Feed and End method will not be called
+	// anymore.  Otherwise, it should return true by default.
+	Begin(p *Pipeline, index int, dataSize *int) (keep bool)
 
-		// Feed is called for each batch of data. The pipeline, the index
-		// of this node among all the nodes in the pipeline (which may be
-		// different from the index number seen by Begin), the sequence
-		// number of the batch (according to the encounter order), and the
-		// actual batch of data are passed as parameters.
-		//
-		// The data parameter contains the batch of data, which is usually
-		// a slice of a particular type. After the data has been processed
-		// by all filters of this node, the node must call p.FeedForward
-		// with exactly the same index and sequence numbers, but a
-		// potentially modified batch of data. FeedForward must be called
-		// even when the data batch is or becomes empty, to ensure that
-		// all sequence numbers are seen by subsequent nodes.
-		Feed(p *Pipeline, index int, seqNo int, data interface{})
+	// Feed is called for each batch of data. The pipeline, the index
+	// of this node among all the nodes in the pipeline (which may be
+	// different from the index number seen by Begin), the sequence
+	// number of the batch (according to the encounter order), and the
+	// actual batch of data are passed as parameters.
+	//
+	// The data parameter contains the batch of data, which is usually
+	// a slice of a particular type. After the data has been processed
+	// by all filters of this node, the node must call p.FeedForward
+	// with exactly the same index and sequence numbers, but a
+	// potentially modified batch of data. FeedForward must be called
+	// even when the data batch is or becomes empty, to ensure that
+	// all sequence numbers are seen by subsequent nodes.
+	Feed(p *Pipeline, index int, seqNo int, data interface{})
 
-		// End is called after all batches have been passed to Feed. This
-		// allows the node to release resources and call the finalizers of
-		// its filters.
-		End()
-	}
+	// End is called after all batches have been passed to Feed. This
+	// allows the node to release resources and call the finalizers of
+	// its filters.
+	End()
+}
 
-	/*
-	  A Pipeline is a parallel pipeline that can feed batches of data
-	  fetched from a source through several nodes that are ordered,
-	  sequential, or parallel.
+/*
+A Pipeline is a parallel pipeline that can feed batches of data
+fetched from a source through several nodes that are ordered,
+sequential, or parallel.
 
-	  The zero Pipeline is valid and empty.
+The zero Pipeline is valid and empty.
 
-	  A Pipeline must not be copied after first use.
-	*/
-	Pipeline struct {
-		mutex      sync.RWMutex
-		err        error
-		ctx        context.Context
-		cancel     context.CancelFunc
-		source     Source
-		nodes      []Node
-		nofBatches int
-	}
-)
+A Pipeline must not be copied after first use.
+*/
+type Pipeline struct {
+	mutex      sync.RWMutex
+	err        error
+	ctx        context.Context
+	cancel     context.CancelFunc
+	source     Source
+	nodes      []Node
+	nofBatches int
+}
 
 /*
 Err sets or gets an error value for this pipeline.

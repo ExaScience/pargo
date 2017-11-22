@@ -165,16 +165,15 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				err0 := recur(low, mid, half)
-				err1 := recur(mid, high, n-half)
-				if err0 != nil {
-					err = err0
-				} else {
-					err = err1
-				}
-				return
 			}
+			err0 := recur(low, mid, half)
+			err1 := recur(mid, high, n-half)
+			if err0 != nil {
+				err = err0
+			} else {
+				err = err1
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -209,11 +208,10 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				b0 := recur(low, mid, half)
-				b1 := recur(mid, high, n-half)
-				return b0 && b1
 			}
+			b0 := recur(low, mid, half)
+			b1 := recur(mid, high, n-half)
+			return b0 && b1
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -248,11 +246,10 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				b0 := recur(low, mid, half)
-				b1 := recur(mid, high, n-half)
-				return b0 || b1
 			}
+			b0 := recur(low, mid, half)
+			b1 := recur(mid, high, n-half)
+			return b0 || b1
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -289,17 +286,16 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				b0, err0 := recur(low, mid, half)
-				b1, err1 := recur(mid, high, n-half)
-				result = b0 && b1
-				if err0 != nil {
-					err = err0
-				} else {
-					err = err1
-				}
-				return
 			}
+			b0, err0 := recur(low, mid, half)
+			b1, err1 := recur(mid, high, n-half)
+			result = b0 && b1
+			if err0 != nil {
+				err = err0
+			} else {
+				err = err1
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -336,17 +332,16 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			mid := low + batchSize*half
 			if mid >= high {
 				return f(low, high)
-			} else {
-				b0, err0 := recur(low, mid, half)
-				b1, err1 := recur(mid, high, n-half)
-				result = b0 || b1
-				if err0 != nil {
-					err = err0
-				} else {
-					err = err1
-				}
-				return
 			}
+			b0, err0 := recur(low, mid, half)
+			b1, err1 := recur(mid, high, n-half)
+			result = b0 || b1
+			if err0 != nil {
+				err = err0
+			} else {
+				err = err1
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -381,11 +376,10 @@ func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairRed
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left := recur(low, mid, half)
-				right := recur(mid, high, n-half)
-				return pair(left, right)
 			}
+			left := recur(low, mid, half)
+			right := recur(mid, high, n-half)
+			return pair(left, right)
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -420,18 +414,17 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left, err0 := recur(low, mid, half)
-				right, err1 := recur(mid, high, n-half)
-				if err0 != nil {
-					err = err0
-				} else if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
-				return
 			}
+			left, err0 := recur(low, mid, half)
+			right, err1 := recur(mid, high, n-half)
+			if err0 != nil {
+				err = err0
+			} else if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -466,11 +459,10 @@ func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.I
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left := recur(low, mid, half)
-				right := recur(mid, high, n-half)
-				return pair(left, right)
 			}
+			left := recur(low, mid, half)
+			right := recur(mid, high, n-half)
+			return pair(left, right)
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -506,18 +498,17 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left, err0 := recur(low, mid, half)
-				right, err1 := recur(mid, high, n-half)
-				if err0 != nil {
-					err = err0
-				} else if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
-				return
 			}
+			left, err0 := recur(low, mid, half)
+			right, err1 := recur(mid, high, n-half)
+			if err0 != nil {
+				err = err0
+			} else if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -553,11 +544,10 @@ func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left := recur(low, mid, half)
-				right := recur(mid, high, n-half)
-				return pair(left, right)
 			}
+			left := recur(low, mid, half)
+			right := recur(mid, high, n-half)
+			return pair(left, right)
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -593,18 +583,17 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left, err0 := recur(low, mid, half)
-				right, err1 := recur(mid, high, n-half)
-				if err0 != nil {
-					err = err0
-				} else if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
-				return
 			}
+			left, err0 := recur(low, mid, half)
+			right, err1 := recur(mid, high, n-half)
+			if err0 != nil {
+				err = err0
+			} else if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -640,11 +629,10 @@ func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair p
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left := recur(low, mid, half)
-				right := recur(mid, high, n-half)
-				return pair(left, right)
 			}
+			left := recur(low, mid, half)
+			right := recur(mid, high, n-half)
+			return pair(left, right)
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}
@@ -680,18 +668,17 @@ func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, 
 			mid := low + batchSize*half
 			if mid >= high {
 				return reduce(low, high)
-			} else {
-				left, err0 := recur(low, mid, half)
-				right, err1 := recur(mid, high, n-half)
-				if err0 != nil {
-					err = err0
-				} else if err1 != nil {
-					err = err1
-				} else {
-					result, err = pair(left, right)
-				}
-				return
 			}
+			left, err0 := recur(low, mid, half)
+			right, err1 := recur(mid, high, n-half)
+			if err0 != nil {
+				err = err0
+			} else if err1 != nil {
+				err = err1
+			} else {
+				result, err = pair(left, right)
+			}
+			return
 		default:
 			panic(fmt.Sprintf("invalid number of batches: %v", n))
 		}

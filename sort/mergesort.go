@@ -8,43 +8,41 @@ import (
 
 const msortGrainSize = 0x3000
 
-type (
-	/*
-		A type, typically a collection, that satisfies sort.StableSorter can
-		be sorted by StableSort in this package. The methods require that
-		ranges of elements of the collection can be enumerated by integer
-		indices.
-	*/
-	StableSorter interface {
-		SequentialSorter
+/*
+StableSorter is a type, typically a collection, that satisfies
+sort.StableSorter can be sorted by StableSort in this package. The
+methods require that ranges of elements of the collection can be
+enumerated by integer indices.
+*/
+type StableSorter interface {
+	SequentialSorter
 
-		// NewTemp creates a new collection that can hold as many elements
-		// as the original collection. This is temporary memory needed by
-		// StableSort, but not needed anymore afterwards. The temporary
-		// collection does not need to be initialized.
-		NewTemp() StableSorter
+	// NewTemp creates a new collection that can hold as many elements
+	// as the original collection. This is temporary memory needed by
+	// StableSort, but not needed anymore afterwards. The temporary
+	// collection does not need to be initialized.
+	NewTemp() StableSorter
 
-		// Len is the number of elements in the collection.
-		Len() int
+	// Len is the number of elements in the collection.
+	Len() int
 
-		// Less reports whether the element with index i should sort
-		// before the element with index j.
-		Less(i, j int) bool
+	// Less reports whether the element with index i should sort
+	// before the element with index j.
+	Less(i, j int) bool
 
-		// Assign returns a function that assigns ranges from that to this
-		// collection. The element with index i is the first element in
-		// this collection to assign to, and the element with index j is
-		// the first element in that collection to assign from, with len
-		// determining the number of elements to assign. The effect should
-		// be the same as this[i:i+len] = that[j:j+len].
-		Assign(that StableSorter) func(i, j, len int)
-	}
+	// Assign returns a function that assigns ranges from that to this
+	// collection. The element with index i is the first element in
+	// this collection to assign to, and the element with index j is
+	// the first element in that collection to assign from, with len
+	// determining the number of elements to assign. The effect should
+	// be the same as this[i:i+len] = that[j:j+len].
+	Assign(that StableSorter) func(i, j, len int)
+}
 
-	sorter struct {
-		less   func(i, j int) bool
-		assign func(i, j, len int)
-	}
-)
+type sorter struct {
+	less   func(i, j int) bool
+	assign func(i, j, len int)
+}
 
 func binarySearchEq(x int, T *sorter, p, r int) int {
 	low, high := p, r+1

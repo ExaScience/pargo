@@ -139,12 +139,12 @@ func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{Scanner: bufio.NewScanner(r)}
 }
 
-// Implements the Prepare method of the Source interface.
+// Prepare implements the method of the Source interface.
 func (src *Scanner) Prepare(_ context.Context) (size int) {
 	return -1
 }
 
-// Implements the Fetch method of the Source interface.
+// Fetch implements the method of the Source interface.
 func (src *Scanner) Fetch(n int) (fetched int) {
 	var data []string
 	for fetched = 0; fetched < n; fetched++ {
@@ -158,7 +158,7 @@ func (src *Scanner) Fetch(n int) (fetched int) {
 	return
 }
 
-// Implements the Data method of the Source interface.
+// Data implements the method of the Source interface.
 func (src *Scanner) Data() interface{} {
 	return src.data
 }

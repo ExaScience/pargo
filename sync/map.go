@@ -19,38 +19,36 @@ import (
 	"github.com/exascience/pargo/speculative"
 )
 
-type (
-	/*
-	  A Hasher represents an object that has a hash value, which is needed
-	  by Map.
+/*
+A Hasher represents an object that has a hash value, which is needed
+by Map.
 
-	  If Go would allow access to the predefined hash functions for Go
-	  types, this interface would not be needed.
-	*/
-	Hasher interface {
-		Hash() uint64
-	}
+If Go would allow access to the predefined hash functions for Go
+types, this interface would not be needed.
+*/
+type Hasher interface {
+	Hash() uint64
+}
 
-	/*
-	  A Split is a partial map that belongs to a larger Map, which can be
-	  individually locked. Its enclosed map can then be individually
-	  accessed without blocking accesses to other splits.
-	*/
-	Split struct {
-		sync.RWMutex
-		Map map[interface{}]interface{}
-	}
+/*
+A Split is a partial map that belongs to a larger Map, which can be
+individually locked. Its enclosed map can then be individually
+accessed without blocking accesses to other splits.
+*/
+type Split struct {
+	sync.RWMutex
+	Map map[interface{}]interface{}
+}
 
-	/*
-	  A Map is a parallel map that consists of several split maps that can
-	  be individually locked and accessed.
+/*
+A Map is a parallel map that consists of several split maps that can
+be individually locked and accessed.
 
-	  The zero Map is not valid.
-	*/
-	Map struct {
-		splits []Split
-	}
-)
+The zero Map is not valid.
+*/
+type Map struct {
+	splits []Split
+}
 
 /*
 NewMap returns a map with size splits.
