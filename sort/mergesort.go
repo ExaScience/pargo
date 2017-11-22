@@ -9,10 +9,9 @@ import (
 const msortGrainSize = 0x3000
 
 /*
-StableSorter is a type, typically a collection, that satisfies
-sort.StableSorter can be sorted by StableSort in this package. The
-methods require that ranges of elements of the collection can be
-enumerated by integer indices.
+StableSorter is a type, typically a collection, that can be sorted by
+StableSort in this package. The methods require that ranges of
+elements of the collection can be enumerated by integer indices.
 */
 type StableSorter interface {
 	SequentialSorter
@@ -30,13 +29,13 @@ type StableSorter interface {
 	// before the element with index j.
 	Less(i, j int) bool
 
-	// Assign returns a function that assigns ranges from that to this
-	// collection. The element with index i is the first element in
-	// this collection to assign to, and the element with index j is
-	// the first element in that collection to assign from, with len
-	// determining the number of elements to assign. The effect should
-	// be the same as this[i:i+len] = that[j:j+len].
-	Assign(that StableSorter) func(i, j, len int)
+	// Assign returns a function that assigns ranges from source to the
+	// receiver collection. The element with index i is the first
+	// element in the receiver to assign to, and the element with index
+	// j is the first element in the source collection to assign from,
+	// with len determining the number of elements to assign. The effect
+	// should be the same as receiver[i:i+len] = source[j:j+len].
+	Assign(source StableSorter) func(i, j, len int)
 }
 
 type sorter struct {
