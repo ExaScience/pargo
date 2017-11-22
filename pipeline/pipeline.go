@@ -144,7 +144,7 @@ pipeline.
 func (p *Pipeline) Err(err error) error {
 	if err == nil {
 		p.mutex.RLock()
-		err := p.err
+		err = p.err
 		p.mutex.RUnlock()
 		return err
 	}
