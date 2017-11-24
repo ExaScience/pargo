@@ -7,10 +7,8 @@ import (
 	"reflect"
 )
 
-/*
-A Source represents an object that can generate data batches for
-pipelines.
-*/
+// A Source represents an object that can generate data batches for
+// pipelines.
 type Source interface {
 	// Err returns an error value or nil
 	Err() error
@@ -122,19 +120,15 @@ func reflectSource(source interface{}) Source {
 	}
 }
 
-/*
-Scanner is a wrapper around bufio.Scanner so it can act as a data
-source for pipelines.
-*/
+// Scanner is a wrapper around bufio.Scanner so it can act as a data
+// source for pipelines.
 type Scanner struct {
 	*bufio.Scanner
 	data interface{}
 }
 
-/*
-NewScanner returns a new Scanner to read from r. The split function
-defaults to bufio.ScanLines.
-*/
+// NewScanner returns a new Scanner to read from r. The split function
+// defaults to bufio.ScanLines.
 func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{Scanner: bufio.NewScanner(r)}
 }

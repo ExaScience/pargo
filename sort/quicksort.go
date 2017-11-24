@@ -8,11 +8,9 @@ import (
 
 const qsortGrainSize = 0x500
 
-/*
-Sorter is a type, typically a collection, that can be sorted by Sort
-in this package. The methods require that (ranges of) elements of the
-collection can be enumerated by integer indices.
-*/
+// Sorter is a type, typically a collection, that can be sorted by
+// Sort in this package. The methods require that (ranges of) elements
+// of the collection can be enumerated by integer indices.
 type Sorter interface {
 	SequentialSorter
 	sort.Interface
@@ -42,11 +40,9 @@ func pseudoMedianOfNine(data sort.Interface, index, size int) int {
 	)
 }
 
-/*
-Sort uses a parallel quicksort implementation.
-
-It is good for small core counts and small collection sizes.
-*/
+// Sort uses a parallel quicksort implementation.
+//
+// It is good for small core counts and small collection sizes.
 func Sort(data Sorter) {
 	size := data.Len()
 	sSort := data.SequentialSort

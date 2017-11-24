@@ -8,11 +8,9 @@ import (
 
 const msortGrainSize = 0x3000
 
-/*
-StableSorter is a type, typically a collection, that can be sorted by
-StableSort in this package. The methods require that ranges of
-elements of the collection can be enumerated by integer indices.
-*/
+// StableSorter is a type, typically a collection, that can be sorted
+// by StableSort in this package. The methods require that ranges of
+// elements of the collection can be enumerated by integer indices.
 type StableSorter interface {
 	SequentialSorter
 
@@ -139,16 +137,15 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 	}
 }
 
-/*
-StableSort uses a parallel implementation of merge sort, also known as
-cilksort.
-
-StableSort is only stable if data's SequentialSort method is stable.
-
-StableSort is good for large core counts and large collection sizes,
-but needs a shallow copy of the data collection as additional
-temporary memory.
-*/
+// StableSort uses a parallel implementation of merge sort, also known
+// as cilksort.
+//
+// StableSort is only stable if data's SequentialSort method is
+// stable.
+//
+// StableSort is good for large core counts and large collection
+// sizes, but needs a shallow copy of the data collection as
+// additional temporary memory.
 func StableSort(data StableSorter) {
 	// See https://en.wikipedia.org/wiki/Introduction_to_Algorithms and
 	// https://www.clear.rice.edu/comp422/lecture-notes/ for details on the algorithm.

@@ -1,12 +1,10 @@
 package parallel_test
 
-/*
-  This is a simplified version of a heat distribution simulation,
-  based on an implementation by Wilfried Verachtert.
-
-  See https://en.wikipedia.org/wiki/Heat_equation for some theoretical
-  background.
-*/
+// This is a simplified version of a heat distribution simulation,
+// based on an implementation by Wilfried Verachtert.
+//
+// See https://en.wikipedia.org/wiki/Heat_equation for some
+// theoretical background.
 
 import (
 	"fmt"

@@ -5,11 +5,9 @@ import (
 	"runtime"
 )
 
-/*
-ComputeNofBatches divides the size of the range (high - low) by n. If
-n is 0, a default is used that takes runtime.GOMAXPROCS9) into
-account.
-*/
+// ComputeNofBatches divides the size of the range (high - low) by
+// n. If n is 0, a default is used that takes runtime.GOMAXPROCS9)
+// into account.
 func ComputeNofBatches(low, high, n int) (batches int) {
 	switch size := high - low; {
 	case size > 0:
