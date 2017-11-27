@@ -121,37 +121,35 @@ type Pipeline struct {
 	nofBatches int
 }
 
-// Err sets or gets an error value for this pipeline.
+// Err returns the current error value for this pipeline, which may be
+// nil if no error has occurred so far.
 //
-// If err is nil, Err returns the current error value for this
-// pipeline.
+// Err and SetErr are safe to be concurrently invoked.
+func (p *Pipeline) Err() (err error) {
+	p.mutex.RLock()
+	err = p.err
+	p.mutex.RUnlock()
+	return err
+}
+
+// SetErr attempts to a set a new error value for this pipeline,
+// unless it already has a non-nil error value. If the attempt is
+// successful, SetErr also cancels the pipeline, and returns true. If
+// the attempt is not successful, SetErr returns false.
 //
-// If err is not nil, Err attempts to set a new error value for this
-// pipeline, unless it already has a non-nil error value. If the
-// attempt is successful, err is returned and Err also cancels the
-// pipeline. If the attempt is not successful, the current error value
-// for this pipeline is returned instead.
-//
-// Err is safe to be invoked from different goroutines, for example
+// SetErr and Err are safe to be concurrently invoked, for example
 // from the different goroutines executing filters of parallel nodes
 // in this pipeline.
-func (p *Pipeline) Err(err error) error {
-	if err == nil {
-		p.mutex.RLock()
-		err = p.err
-		p.mutex.RUnlock()
-		return err
-	}
+func (p *Pipeline) SetErr(err error) bool {
 	p.mutex.Lock()
 	if p.err == nil {
 		p.err = err
 		p.mutex.Unlock()
 		p.cancel()
-	} else {
-		err = p.err
-		p.mutex.Unlock()
+		return true
 	}
-	return err
+	p.mutex.Unlock()
+	return false
 }
 
 // Context returns this pipeline's context.
@@ -281,7 +279,10 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 		if dataSize < 0 {
 			for seqNo, batchSize := 0, batchInc; p.source.Fetch(batchSize) > 0; seqNo, batchSize = seqNo+1, nextBatchSize(batchSize) {
 				p.nodes[0].Feed(p, 0, seqNo, p.source.Data())
-				if p.Err(p.source.Err()) != nil {
+				if err := p.source.Err(); err != nil {
+					p.SetErr(err)
+					return
+				} else if p.Err() != nil {
 					return
 				}
 			}
@@ -292,7 +293,10 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 			}
 			for seqNo := 0; p.source.Fetch(batchSize) > 0; seqNo++ {
 				p.nodes[0].Feed(p, 0, seqNo, p.source.Data())
-				if p.Err(p.source.Err()) != nil {
+				if err := p.source.Err(); err != nil {
+					p.SetErr(err)
+					return
+				} else if p.Err() != nil {
 					return
 				}
 			}

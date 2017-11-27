@@ -221,7 +221,7 @@ func Slice(result interface{}) Filter {
 	res := reflect.ValueOf(result).Elem()
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
 		if (res.Kind() != reflect.Slice) && !res.CanSet() {
-			pipeline.Err(errors.New("result is not a settable slice in Pipeline.ToSlice"))
+			pipeline.SetErr(errors.New("result is not a settable slice in Pipeline.ToSlice"))
 			return
 		}
 		switch kind {
@@ -332,7 +332,7 @@ func Skip(n int) Node {
 		switch {
 		case n < 0: // skip everything
 			*size = 0
-			pipeline.Err(errors.New("skip filter with unknown size"))
+			pipeline.SetErr(errors.New("skip filter with unknown size"))
 			receiver = func(_ int, _ interface{}) interface{} { return nil }
 		case n == 0: // nothing to skip
 		case (*size < 0) || (*size > n):

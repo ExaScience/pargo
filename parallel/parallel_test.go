@@ -45,7 +45,7 @@ func ExampleErrDo() {
 
 	fib = func(n int) (result int, err error) {
 		if n < 0 {
-			err = errors.New("Invalid argument.")
+			err = errors.New("invalid argument")
 		} else if n < 2 {
 			result = n
 		} else {
@@ -64,7 +64,7 @@ func ExampleErrDo() {
 
 	parallelFib = func(n int) (result int, err error) {
 		if n < 0 {
-			err = errors.New("Invalid argument.")
+			err = errors.New("invalid argument")
 		} else if n < 20 {
 			result, err = fib(n)
 		} else {
