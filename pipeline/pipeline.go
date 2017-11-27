@@ -132,10 +132,10 @@ func (p *Pipeline) Err() (err error) {
 	return err
 }
 
-// SetErr attempts to a set a new error value for this pipeline,
-// unless it already has a non-nil error value. If the attempt is
-// successful, SetErr also cancels the pipeline, and returns true. If
-// the attempt is not successful, SetErr returns false.
+// SetErr attempts to set a new error value for this pipeline, unless
+// it already has a non-nil error value. If the attempt is successful,
+// SetErr also cancels the pipeline, and returns true. If the attempt
+// is not successful, SetErr returns false.
 //
 // SetErr and Err are safe to be concurrently invoked, for example
 // from the different goroutines executing filters of parallel nodes
