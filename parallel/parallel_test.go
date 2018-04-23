@@ -93,7 +93,7 @@ func ExampleErrDo() {
 	}
 
 	// Output:
-	// Invalid argument.
+	// invalid argument
 }
 
 func ExampleIntRangeReduce() {

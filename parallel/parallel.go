@@ -37,8 +37,8 @@ func Do(thunks ...pargo.Thunk) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			thunks[1]()
 		}()
@@ -47,8 +47,8 @@ func Do(thunks ...pargo.Thunk) {
 		half := len(thunks) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			Do(thunks[half:]...)
 		}()
@@ -85,8 +85,8 @@ func ErrDo(thunks ...pargo.ErrThunk) (err error) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			err1 = thunks[1]()
 		}()
@@ -95,8 +95,8 @@ func ErrDo(thunks ...pargo.ErrThunk) (err error) {
 		half := len(thunks) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			err1 = ErrDo(thunks[half:]...)
 		}()
@@ -139,8 +139,8 @@ func And(predicates ...pargo.Predicate) (result bool) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1 = predicates[1]()
 		}()
@@ -149,8 +149,8 @@ func And(predicates ...pargo.Predicate) (result bool) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1 = And(predicates[half:]...)
 		}()
@@ -188,8 +188,8 @@ func Or(predicates ...pargo.Predicate) (result bool) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1 = predicates[1]()
 		}()
@@ -198,8 +198,8 @@ func Or(predicates ...pargo.Predicate) (result bool) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1 = Or(predicates[half:]...)
 		}()
@@ -240,8 +240,8 @@ func ErrAnd(predicates ...pargo.ErrPredicate) (result bool, err error) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1, err1 = predicates[1]()
 		}()
@@ -250,8 +250,8 @@ func ErrAnd(predicates ...pargo.ErrPredicate) (result bool, err error) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1, err1 = ErrAnd(predicates[half:]...)
 		}()
@@ -298,8 +298,8 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 	case 2:
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1, err1 = predicates[1]()
 		}()
@@ -308,8 +308,8 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				wg.Done()
 				p = recover()
+				wg.Done()
 			}()
 			b1, err1 = ErrOr(predicates[half:]...)
 		}()
@@ -364,8 +364,8 @@ func Range(low, high, n int, f pargo.RangeFunc) {
 				wg.Add(1)
 				go func() {
 					defer func() {
-						wg.Done()
 						p = recover()
+						wg.Done()
 					}()
 					recur(mid, high, n-half)
 				}()
@@ -421,8 +421,8 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				err1 = recur(mid, high, n-half)
 			}()
@@ -483,8 +483,8 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				b1 = recur(mid, high, n-half)
 			}()
@@ -540,8 +540,8 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				b1 = recur(mid, high, n-half)
 			}()
@@ -600,8 +600,8 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				b1, err1 = recur(mid, high, n-half)
 			}()
@@ -666,8 +666,8 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				b1, err1 = recur(mid, high, n-half)
 			}()
@@ -730,8 +730,8 @@ func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairRed
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right = recur(mid, high, n-half)
 			}()
@@ -790,8 +790,8 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
 			}()
@@ -855,8 +855,8 @@ func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.I
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right = recur(mid, high, n-half)
 			}()
@@ -917,8 +917,8 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
 			}()
@@ -983,8 +983,8 @@ func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right = recur(mid, high, n-half)
 			}()
@@ -1045,8 +1045,8 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
 			}()
@@ -1111,8 +1111,8 @@ func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair p
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right = recur(mid, high, n-half)
 			}()
@@ -1173,8 +1173,8 @@ func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, 
 			wg.Add(1)
 			go func() {
 				defer func() {
-					wg.Done()
 					p = recover()
+					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
 			}()
