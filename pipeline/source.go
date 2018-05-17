@@ -30,13 +30,14 @@ type Source interface {
 }
 
 type sliceSource struct {
-	value       reflect.Value
-	index, size int
-	data        interface{}
+	value reflect.Value
+	size  int
+	data  interface{}
 }
 
 func newSliceSource(value reflect.Value) *sliceSource {
-	return &sliceSource{value: value, size: value.Len()}
+	size := value.Len()
+	return &sliceSource{value: value.Slice(0, size), size: size}
 }
 
 func (src *sliceSource) Err() error {
@@ -49,16 +50,18 @@ func (src *sliceSource) Prepare(_ context.Context) int {
 
 func (src *sliceSource) Fetch(n int) (fetched int) {
 	switch {
-	case src.index >= src.size:
+	case src.size == 0:
 		src.data = nil
-	case (src.index + n) > src.size:
-		src.data = src.value.Slice(src.index, src.size).Interface()
-		fetched = src.size - src.index
-		src.index = src.size
+	case n >= src.size:
+		fetched = src.size
+		src.data = src.value.Interface()
+		src.value = reflect.ValueOf(nil)
+		src.size = 0
 	default:
-		src.data = src.value.Slice(src.index, src.index+n).Interface()
-		src.index += n
 		fetched = n
+		src.data = src.value.Slice(0, n).Interface()
+		src.value = src.value.Slice(n, src.size)
+		src.size -= n
 	}
 	return
 }
@@ -121,7 +124,7 @@ func reflectSource(source interface{}) Source {
 }
 
 // Scanner is a wrapper around bufio.Scanner so it can act as a data
-// source for pipelines.
+// source for pipelines. It fetches strings.
 type Scanner struct {
 	*bufio.Scanner
 	data interface{}
@@ -154,5 +157,42 @@ func (src *Scanner) Fetch(n int) (fetched int) {
 
 // Data implements the method of the Source interface.
 func (src *Scanner) Data() interface{} {
+	return src.data
+}
+
+// BytesScanner is a wrapper around bufio.Scanner so it can act as
+// a data source for pipelines. It fetches slices of bytes.
+type BytesScanner struct {
+	*bufio.Scanner
+	data interface{}
+}
+
+// NewBytesScanner returns a new Scanner to read from r. The split function
+// defaults to bufio.ScanLines.
+func NewBytesScanner(r io.Reader) *BytesScanner {
+	return &BytesScanner{Scanner: bufio.NewScanner(r)}
+}
+
+// Prepare implements the method of the Source interface.
+func (src *BytesScanner) Prepare(_ context.Context) (size int) {
+	return -1
+}
+
+// Fetch implements the method of the Source interface.
+func (src *BytesScanner) Fetch(n int) (fetched int) {
+	var data [][]byte
+	for fetched = 0; fetched < n; fetched++ {
+		if src.Scan() {
+			data = append(data, append([]byte(nil), src.Bytes()...))
+		} else {
+			break
+		}
+	}
+	src.data = data
+	return
+}
+
+// Data implements the method of the Source interface.
+func (src *BytesScanner) Data() interface{} {
 	return src.data
 }
