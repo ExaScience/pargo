@@ -1,7 +1,6 @@
 package pipeline
 
 import (
-	"runtime"
 	"sync"
 )
 
@@ -50,7 +49,7 @@ func (node *seqnode) Begin(p *Pipeline, index int, dataSize *int) (keep bool) {
 	node.receivers, node.finalizers = ComposeFilters(p, node.kind, dataSize, node.filters)
 	node.filters = nil
 	if keep = (len(node.receivers) > 0) || (len(node.finalizers) > 0); keep {
-		node.channel = make(chan dataBatch, 2*runtime.GOMAXPROCS(0))
+		node.channel = make(chan dataBatch)
 		node.waitGroup.Add(1)
 		switch node.kind {
 		case Sequential:
@@ -115,13 +114,11 @@ func (node *seqnode) Begin(p *Pipeline, index int, dataSize *int) (keep bool) {
 
 // Implements the Feed method of the Node interface.
 func (node *seqnode) Feed(p *Pipeline, _ int, seqNo int, data interface{}) {
-	for {
-		select {
-		case <-p.ctx.Done():
-			return
-		case node.channel <- dataBatch{seqNo, data}:
-			return
-		}
+	select {
+	case <-p.ctx.Done():
+		return
+	case node.channel <- dataBatch{seqNo, data}:
+		return
 	}
 }
 
