@@ -1,16 +1,17 @@
 package pipeline
 
 import (
-	"reflect"
 	"runtime"
 	"sync"
 )
 
 type lparnode struct {
 	limit      int
-	channels   []chan dataBatch
-	cases      []reflect.SelectCase
+	ordered    bool
+	cond       *sync.Cond
+	channel    chan dataBatch
 	waitGroup  sync.WaitGroup
+	run        int
 	filters    []Filter
 	receivers  []Receiver
 	finalizers []Finalizer
@@ -31,6 +32,11 @@ func LimitedPar(limit int, filters ...Filter) Node {
 	return &lparnode{limit: limit, filters: filters}
 }
 
+func (node *lparnode) makeOrdered() {
+	node.ordered = true
+	node.cond = sync.NewCond(&sync.Mutex{})
+}
+
 // Implements the TryMerge method of the Node interface.
 func (node *lparnode) TryMerge(next Node) bool {
 	if nxt, merge := next.(*lparnode); merge && (nxt.limit == node.limit) {
@@ -47,24 +53,27 @@ func (node *lparnode) Begin(p *Pipeline, index int, dataSize *int) (keep bool) {
 	node.receivers, node.finalizers = ComposeFilters(p, Parallel, dataSize, node.filters)
 	node.filters = nil
 	if keep = (len(node.receivers) > 0) || (len(node.finalizers) > 0); keep {
-		node.cases = []reflect.SelectCase{{Dir: reflect.SelectRecv}}
+		node.channel = make(chan dataBatch)
 		node.waitGroup.Add(node.limit)
 		for i := 0; i < node.limit; i++ {
-			channel := make(chan dataBatch)
-			node.channels = append(node.channels, channel)
-			node.cases = append(node.cases, reflect.SelectCase{
-				Dir:  reflect.SelectSend,
-				Chan: reflect.ValueOf(channel),
-			})
 			go func() {
 				defer node.waitGroup.Done()
 				for {
 					select {
 					case <-p.ctx.Done():
 						return
-					case batch, ok := <-channel:
+					case batch, ok := <-node.channel:
 						if !ok {
 							return
+						}
+						if node.ordered {
+							node.cond.L.Lock()
+							if batch.seqNo != node.run {
+								panic("Invalid receive order in an ordered limited parallel pipeline node.")
+							}
+							node.run++
+							node.cond.L.Unlock()
+							node.cond.Broadcast()
 						}
 						feed(p, node.receivers, index, batch.seqNo, batch.data)
 					}
@@ -77,19 +86,32 @@ func (node *lparnode) Begin(p *Pipeline, index int, dataSize *int) (keep bool) {
 
 // Implements the Feed method of the Node interface.
 func (node *lparnode) Feed(p *Pipeline, _ int, seqNo int, data interface{}) {
-	node.cases[0].Chan = reflect.ValueOf(p.ctx.Done())
-	send := reflect.ValueOf(dataBatch{seqNo: seqNo, data: data})
-	for i := 1; i < len(node.cases); i++ {
-		node.cases[i].Send = send
+	if node.ordered {
+		node.cond.L.Lock()
+		defer node.cond.L.Unlock()
+		for {
+			if node.run == seqNo {
+				select {
+				case <-p.ctx.Done():
+					return
+				case node.channel <- dataBatch{seqNo, data}:
+					return
+				}
+			}
+			node.cond.Wait()
+		}
 	}
-	reflect.Select(node.cases)
+	select {
+	case <-p.ctx.Done():
+		return
+	case node.channel <- dataBatch{seqNo, data}:
+		return
+	}
 }
 
 // Implements the End method of the Node interface.
 func (node *lparnode) End() {
-	for _, channel := range node.channels {
-		close(channel)
-	}
+	close(node.channel)
 	node.waitGroup.Wait()
 	for _, finalize := range node.finalizers {
 		finalize()

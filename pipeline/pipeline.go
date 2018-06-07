@@ -112,13 +112,15 @@ type Node interface {
 //
 // A Pipeline must not be copied after first use.
 type Pipeline struct {
-	mutex      sync.RWMutex
-	err        error
-	ctx        context.Context
-	cancel     context.CancelFunc
-	source     Source
-	nodes      []Node
-	nofBatches int
+	mutex        sync.RWMutex
+	err          error
+	ctx          context.Context
+	cancel       context.CancelFunc
+	source       Source
+	nodes        []Node
+	nofBatches   int
+	batchInc     int
+	maxBatchSize int
 }
 
 // Err returns the current error value for this pipeline, which may be
@@ -201,10 +203,8 @@ func (p *Pipeline) Add(nodes ...Node) {
 // takes runtime.GOMAXPROCS(0) into account.
 //
 // If the expected total size for this pipeline's data source is
-// unknown, or is difficult to determine, then the pipeline will start
-// with a reasonably small batch size and increase the batch size for
-// every subsequent batch, to accomodate data sources of different
-// total sizes.
+// unknown, or is difficult to determine, use SetVariableBatchSize
+// to influence batch sizes.
 func (p *Pipeline) NofBatches(n int) (nofBatches int) {
 	if n < 1 {
 		nofBatches = p.nofBatches
@@ -220,14 +220,48 @@ func (p *Pipeline) NofBatches(n int) (nofBatches int) {
 }
 
 const (
-	batchInc     = 1024
-	maxBatchSize = 0x2000000
+	defaultBatchInc     = 1024
+	defaultMaxBatchSize = 0x2000000
 )
 
-func nextBatchSize(batchSize int) (result int) {
-	result = batchSize + batchInc
-	if result > maxBatchSize {
-		result = maxBatchSize
+// SetVariableBatchSize sets the batch size(s) for the batches that
+// are created from the data source for this pipeline, if the expected
+// total size for this pipeline's data source is unknown or difficult
+// to determine.
+//
+// SetVariableBatchSize can be called safely by user programs before
+// Run or RunWithContext is called.
+//
+// If user programs do not call SetVariableBatchSize, or pass a value
+// < 1 to any of the two parameters, then the pipeline will choose
+// a reasonable default value for that respective parameter.
+//
+// The pipeline will start with batchInc as a batch size, and increase
+// the batch size for every subsequent batch by batchInc to
+// accomodate data sources of different total sizes. The batch size
+// will never be larger than maxBatchSize, though.
+//
+// If the expected total size for this pipeline's data source is
+// known, or can be determined easily, use NofBatches to influence
+// the batch size.
+func (p *Pipeline) SetVariableBatchSize(batchInc, maxBatchSize int) {
+	p.batchInc = batchInc
+	p.maxBatchSize = maxBatchSize
+}
+
+func (p *Pipeline) finalizeVariableBatchSize() {
+	if p.batchInc < 1 {
+		p.batchInc = defaultBatchInc
+	}
+	if p.maxBatchSize < 1 {
+		p.maxBatchSize = defaultMaxBatchSize
+	}
+}
+
+func (p *Pipeline) nextBatchSize(batchSize int) (result int) {
+	result = batchSize + p.batchInc
+	if result > p.maxBatchSize {
+		result = p.maxBatchSize
 	}
 	return
 }
@@ -276,8 +310,22 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 				index++
 			}
 		}
+		for index := len(p.nodes) - 1; index >= 0; index-- {
+			if _, ok := p.nodes[index].(*strictordnode); ok {
+				for index = index - 1; index >= 0; index-- {
+					switch node := p.nodes[index].(type) {
+					case *seqnode:
+						node.kind = Ordered
+					case *lparnode:
+						node.makeOrdered()
+					}
+				}
+				break
+			}
+		}
 		if dataSize < 0 {
-			for seqNo, batchSize := 0, batchInc; p.source.Fetch(batchSize) > 0; seqNo, batchSize = seqNo+1, nextBatchSize(batchSize) {
+			p.finalizeVariableBatchSize()
+			for seqNo, batchSize := 0, p.batchInc; p.source.Fetch(batchSize) > 0; seqNo, batchSize = seqNo+1, p.nextBatchSize(batchSize) {
 				p.nodes[0].Feed(p, 0, seqNo, p.source.Data())
 				if err := p.source.Err(); err != nil {
 					p.SetErr(err)
