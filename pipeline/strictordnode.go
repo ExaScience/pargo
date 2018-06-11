@@ -50,6 +50,7 @@ func (node *strictordnode) Begin(p *Pipeline, index int, dataSize *int) (keep bo
 			for {
 				select {
 				case <-p.ctx.Done():
+					node.cond.Broadcast()
 					return
 				case batch, ok := <-node.channel:
 					if !ok {
@@ -83,7 +84,12 @@ func (node *strictordnode) Feed(p *Pipeline, _ int, seqNo int, data interface{})
 				return
 			}
 		}
-		node.cond.Wait()
+		select {
+		case <-p.ctx.Done():
+			return
+		default:
+			node.cond.Wait()
+		}
 	}
 }
 
