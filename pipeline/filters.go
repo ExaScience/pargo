@@ -77,7 +77,7 @@ func Every(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 				return data
 			}
 			finalizer = func() {
-				if res == 0 {
+				if atomic.LoadInt32(&res) == 0 {
 					*result = false
 				}
 			}
@@ -117,7 +117,7 @@ func NotEvery(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 				return data
 			}
 			finalizer = func() {
-				if res == 1 {
+				if atomic.LoadInt32(&res) == 1 {
 					*result = true
 				}
 			}
@@ -156,7 +156,7 @@ func Some(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 				return data
 			}
 			finalizer = func() {
-				if res == 1 {
+				if atomic.LoadInt32(&res) == 1 {
 					*result = true
 				}
 			}
@@ -195,7 +195,7 @@ func NotAny(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 				return data
 			}
 			finalizer = func() {
-				if res == 0 {
+				if atomic.LoadInt32(&res) == 0 {
 					*result = false
 				}
 			}
@@ -265,7 +265,7 @@ func Count(result *int) Filter {
 				return data
 			}
 			finalizer = func() {
-				*result = int(res)
+				*result = int(atomic.LoadInt64(&res))
 			}
 		default:
 			receiver = func(_ int, data interface{}) interface{} {
