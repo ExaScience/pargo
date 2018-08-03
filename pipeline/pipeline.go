@@ -353,6 +353,9 @@ func (p *Pipeline) RunWithContext(ctx context.Context, cancel context.CancelFunc
 	for _, node := range p.nodes {
 		node.End()
 	}
+	if p.err == nil {
+		p.err = p.source.Err()
+	}
 }
 
 // Run initiates pipeline execution by calling
