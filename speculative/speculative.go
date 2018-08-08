@@ -669,7 +669,7 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 //
 // ErrRangeReduce panics if high < low, or if n < 0.
 //
-// If one or more range predicate invocations panic, the corresponding
+// If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrRangeReduce eventually panics
 // with the left-most recovered panic value.
 func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.ErrPairReducer) (interface{}, error) {
@@ -741,7 +741,7 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 //
 // ErrIntRangeReduce panics if high < low, or if n < 0.
 //
-// If one or more range predicate invocations panic, the corresponding
+// If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrIntRangeReduce eventually
 // panics with the left-most recovered panic value.
 func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair pargo.ErrIntPairReducer) (int, error) {
@@ -813,7 +813,7 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 //
 // ErrFloat64RangeReduce panics if high < low, or if n < 0.
 //
-// If one or more range predicate invocations panic, the corresponding
+// If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrFloat64RangeReduce eventually
 // panics with the left-most recovered panic value.
 func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer, pair pargo.ErrFloat64PairReducer) (float64, error) {
@@ -885,7 +885,7 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 //
 // ErrStringRangeReduce panics if high < low, or if n < 0.
 //
-// If one or more range predicate invocations panic, the corresponding
+// If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrStringRangeReduce eventually
 // panics with the left-most recovered panic value.
 func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, pair pargo.ErrStringPairReducer) (string, error) {
