@@ -9,20 +9,18 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/exascience/pargo"
 	"github.com/exascience/pargo/internal"
 )
 
-// Do receives zero or more Thunk functions and executes them in
-// parallel.
+// Do receives zero or more thunks and executes them in parallel.
 //
-// Each thunk is invoked in its own goroutine, and Do returns only
+// Each thunks is invoked in its own goroutine, and Do returns only
 // when all thunks have terminated.
 //
 // If one or more thunks panic, the corresponding goroutines recover
 // the panics, and Do eventually panics with the left-most recovered
 // panic value.
-func Do(thunks ...pargo.Thunk) {
+func Do(thunks ...func()) {
 	switch len(thunks) {
 	case 0:
 		return
@@ -60,8 +58,7 @@ func Do(thunks ...pargo.Thunk) {
 	}
 }
 
-// ErrDo receives zero or more ErrThunk functions and executes them in
-// parallel.
+// ErrDo receives zero or more thunks and executes them in parallel.
 //
 // Each thunk is invoked in its own goroutine, and ErrDo returns only
 // when all thunks have terminated, returning the left-most error
@@ -70,7 +67,7 @@ func Do(thunks ...pargo.Thunk) {
 // If one or more thunks panic, the corresponding goroutines recover
 // the panics, and ErrDo eventually panics with the left-most
 // recovered panic value.
-func ErrDo(thunks ...pargo.ErrThunk) (err error) {
+func ErrDo(thunks ...func() error) (err error) {
 	switch len(thunks) {
 	case 0:
 		return nil
@@ -114,7 +111,7 @@ func ErrDo(thunks ...pargo.ErrThunk) (err error) {
 	return
 }
 
-// And receives zero or more Predicate functions and executes them in
+// And receives zero or more predicate functions and executes them in
 // parallel.
 //
 // Each predicate is invoked in its own goroutine, and And returns
@@ -124,7 +121,7 @@ func ErrDo(thunks ...pargo.ErrThunk) (err error) {
 // If one or more predicates panic, the corresponding goroutines
 // recover the panics, and And eventually panics with the left-most
 // recovered panic value.
-func And(predicates ...pargo.Predicate) (result bool) {
+func And(predicates ...func() bool) (result bool) {
 	switch len(predicates) {
 	case 0:
 		return true
@@ -163,7 +160,7 @@ func And(predicates ...pargo.Predicate) (result bool) {
 	return b0 && b1
 }
 
-// Or receives zero or more Predicate functions and executes them in
+// Or receives zero or more predicate functions and executes them in
 // parallel.
 //
 // Each predicate is invoked in its own goroutine, and Or returns only
@@ -173,7 +170,7 @@ func And(predicates ...pargo.Predicate) (result bool) {
 // If one or more predicates panic, the corresponding goroutines
 // recover the panics, and Or eventually panics with the left-most
 // recovered panic value.
-func Or(predicates ...pargo.Predicate) (result bool) {
+func Or(predicates ...func() bool) (result bool) {
 	switch len(predicates) {
 	case 0:
 		return false
@@ -212,7 +209,7 @@ func Or(predicates ...pargo.Predicate) (result bool) {
 	return b0 || b1
 }
 
-// ErrAnd receives zero or more ErrPredicate functions and executes
+// ErrAnd receives zero or more predicate functions and executes
 // them in parallel.
 //
 // Each predicate is invoked in its own goroutine, and ErrAnd returns
@@ -224,7 +221,7 @@ func Or(predicates ...pargo.Predicate) (result bool) {
 // If one or more predicates panic, the corresponding goroutines
 // recover the panics, and ErrAnd eventually panics with the left-most
 // recovered panic value.
-func ErrAnd(predicates ...pargo.ErrPredicate) (result bool, err error) {
+func ErrAnd(predicates ...func() (bool, error)) (result bool, err error) {
 	switch len(predicates) {
 	case 0:
 		return true, nil
@@ -270,7 +267,7 @@ func ErrAnd(predicates ...pargo.ErrPredicate) (result bool, err error) {
 	return
 }
 
-// ErrOr receives zero or more ErrPredicate functions and executes
+// ErrOr receives zero or more predicate functions and executes
 // them in parallel.
 //
 // Each predicate is invoked in its own goroutine, and ErrOr returns
@@ -282,7 +279,7 @@ func ErrAnd(predicates ...pargo.ErrPredicate) (result bool, err error) {
 // If one or more predicates panic, the corresponding goroutines
 // recover the panics, and ErrOr eventually panics with the left-most
 // recovered panic value.
-func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
+func ErrOr(predicates ...func() (bool, error)) (result bool, err error) {
 	switch len(predicates) {
 	case 0:
 		return false, nil
@@ -328,7 +325,7 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 	return
 }
 
-// Range receives a range, a batch count, and a RangeFunc function,
+// Range receives a range, a batch count n, and a range function f,
 // divides the range into batches, and invokes the range function for
 // each of these batches in parallel, covering the half-open interval
 // from low to high, including low but excluding high.
@@ -339,14 +336,18 @@ func ErrOr(predicates ...pargo.ErrPredicate) (result bool, err error) {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range function is invoked for each batch in its own goroutine,
-// and Range returns only when all range functions have terminated.
+// with 0 <= low <= high, and Range returns only when all range functions
+// have terminated.
 //
 // Range panics if high < low, or if n < 0.
 //
 // If one or more range function invocations panic, the corresponding
 // goroutines recover the panics, and Range eventually panics with the
 // left-most recovered panic value.
-func Range(low, high, n int, f pargo.RangeFunc) {
+func Range(
+	low, high, n int,
+	f func(low, high int),
+) {
 	var recur func(int, int, int)
 	recur = func(low, high, n int) {
 		switch {
@@ -382,11 +383,10 @@ func Range(low, high, n int, f pargo.RangeFunc) {
 	recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrRange receives a range, a batch count, and an ErrRangeFunc
-// function, divides the range into batches, and invokes the range
-// function for each of these batches in parallel, covering the
-// half-open interval from low to high, including low but excluding
-// high.
+// ErrRange receives a range, a batch count n, and a range function f,
+// divides the range into batches, and invokes the range function for
+// each of these batches in parallel, covering the half-open interval
+// from low to high, including low but excluding high.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -394,15 +394,19 @@ func Range(low, high, n int, f pargo.RangeFunc) {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range function is invoked for each batch in its own goroutine,
-// and ErrRange returns only when all range functions have terminated,
-// returning the left-most error value that is different from nil.
+// with 0 <= low <= high, and ErrRange returns only when all range
+// functions have terminated, returning the left-most error value
+// that is different from nil.
 //
 // ErrRange panics if high < low, or if n < 0.
 //
 // If one or more range function invocations panic, the corresponding
 // goroutines recover the panics, and ErrRange eventually panics with
 // the left-most recovered panic value.
-func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
+func ErrRange(
+	low, high, n int,
+	f func(low, high int) error,
+) error {
 	var recur func(int, int, int) error
 	recur = func(low, high, n int) (err error) {
 		switch {
@@ -444,8 +448,8 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeAnd receives a range, a batch count, and a RangePredicate
-// function, divides the range into batches, and invokes the range
+// RangeAnd receives a range, a batch count n, and a range predicate
+// function f, divides the range into batches, and invokes the range
 // predicate for each of these batches in parallel, covering the
 // half-open interval from low to high, including low but excluding
 // high.
@@ -456,15 +460,19 @@ func ErrRange(low, high, n int, f pargo.ErrRangeFunc) error {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range predicate is invoked for each batch in its own goroutine,
-// and RangeAnd returns only when all range predicates have
-// terminated, combining all return values with the && operator.
+// with 0 <= low <= high, and RangeAnd returns only when all range
+// predicates have terminated, combining all return values with
+// the && operator.
 //
 // RangeAnd panics if high < low, or if n < 0.
 //
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and RangeAnd eventually panics with
 // the left-most recovered panic value.
-func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
+func RangeAnd(
+	low, high, n int,
+	f func(low, high int) bool,
+) bool {
 	var recur func(int, int, int) bool
 	recur = func(low, high, n int) (result bool) {
 		switch {
@@ -501,8 +509,8 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeOr receives a range, a batch count, and a RangePredicate
-// function, divides the range into batches, and invokes the range
+// RangeOr receives a range, a batch count n, and a range predicate
+// function f, divides the range into batches, and invokes the range
 // predicate for each of these batches in parallel, covering the
 // half-open interval from low to high, including low but excluding
 // high.
@@ -513,15 +521,19 @@ func RangeAnd(low, high, n int, f pargo.RangePredicate) bool {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range predicate is invoked for each batch in its own goroutine,
-// and RangeOr returns only when all range predicates have terminated,
-// combining all return values with the || operator.
+// with 0 <= low <= high, and RangeOr returns only when all range
+// predicates have terminated, combining all return values with
+// the || operator.
 //
 // RangeOr panics if high < low, or if n < 0.
 //
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and RangeOr eventually panics with
 // the left-most recovered panic value.
-func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
+func RangeOr(
+	low, high, n int,
+	f func(low, high int) bool,
+) bool {
 	var recur func(int, int, int) bool
 	recur = func(low, high, n int) (result bool) {
 		switch {
@@ -558,8 +570,8 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrRangeAnd receives a range, a batch count, and an
-// ErrRangePredicate function, divides the range into batches, and
+// ErrRangeAnd receives a range, a batch count n, and a range
+// predicate function f, divides the range into batches, and
 // invokes the range predicate for each of these batches in parallel,
 // covering the half-open interval from low to high, including low but
 // excluding high.
@@ -570,8 +582,8 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range predicate is invoked for each batch in its own goroutine,
-// and ErrRangeAnd returns only when all range predicates have
-// terminated, combining all return values with the &&
+// with 0 <= low <= high, and ErrRangeAnd returns only when all range
+// predicates have terminated, combining all return values with the &&
 // operator. ErrRangeAnd also returns the left-most error value that
 // is different from nil as a second return value.
 //
@@ -580,7 +592,10 @@ func RangeOr(low, high, n int, f pargo.RangePredicate) bool {
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and ErrRangeAnd eventually panics
 // with the left-most recovered panic value.
-func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
+func ErrRangeAnd(
+	low, high, n int,
+	f func(low, high int) (bool, error),
+) (bool, error) {
 	var recur func(int, int, int) (bool, error)
 	recur = func(low, high, n int) (result bool, err error) {
 		switch {
@@ -624,8 +639,8 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrRangeOr receives a range, a batch count, and an
-// ErrRangePredicate function, divides the range into batches, and
+// ErrRangeOr receives a range, a batch count n, and a range
+// predicate function f, divides the range into batches, and
 // invokes the range predicate for each of these batches in parallel,
 // covering the half-open interval from low to high, including low but
 // excluding high.
@@ -636,8 +651,8 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range predicate is invoked for each batch in its own goroutine,
-// and ErrRangeOr returns only when all range predicates have
-// terminated, combining all return values with the ||
+// with 0 <= low <= high, and ErrRangeOr returns only when all range
+// predicates have terminated, combining all return values with the ||
 // operator. ErrRangeAnd also returns the left-most error value that
 // is different from nil as a second return value.
 //
@@ -646,7 +661,10 @@ func ErrRangeAnd(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 // If one or more range predicate invocations panic, the corresponding
 // goroutines recover the panics, and ErrRangeOr eventually panics
 // with the left-most recovered panic value.
-func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
+func ErrRangeOr(
+	low, high, n int,
+	f func(low, high int) (bool, error),
+) (bool, error) {
 	var recur func(int, int, int) (bool, error)
 	recur = func(low, high, n int) (result bool, err error) {
 		switch {
@@ -690,8 +708,8 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// RangeReduce receives a range, a batch count, a RangeReducer, and a
-// PairReducer function, divides the range into batches, and invokes
+// RangeReduce receives a range, a batch count n, a range reducer reduce,
+// and a pair reducer pair, divides the range into batches, and invokes
 // the range reducer for each of these batches in parallel, covering
 // the half-open interval from low to high, including low but
 // excluding high. The results of the range reducer invocations are
@@ -703,15 +721,19 @@ func ErrRangeOr(low, high, n int, f pargo.ErrRangePredicate) (bool, error) {
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and RangeReduce returns only when all range reducers and pair
-// reducers have terminated.
+// with 0 <= low <= high, and RangeReduce returns only when all range
+// reducers and pair reducers have terminated.
 //
 // RangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and RangeReduce eventually panics
 // with the left-most recovered panic value.
-func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairReducer) interface{} {
+func RangeReduce(
+	low, high, n int,
+	reduce func(low, high int) interface{},
+	pair func(x, y interface{}) interface{},
+) interface{} {
 	var recur func(int, int, int) interface{}
 	recur = func(low, high, n int) (result interface{}) {
 		switch {
@@ -748,8 +770,8 @@ func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairRed
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrRangeReduce receives a range, a batch count, an ErrRangeReducer,
-// and an ErrPairReducer function, divides the range into batches, and
+// ErrRangeReduce receives a range, a batch count, a range reducer reduce,
+// and a pair reducer pair, divides the range into batches, and
 // invokes the range reducer for each of these batches in parallel,
 // covering the half-open interval from low to high, including low but
 // excluding high. The results of the range reducer invocations are
@@ -761,16 +783,21 @@ func RangeReduce(low, high, n int, reduce pargo.RangeReducer, pair pargo.PairRed
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and ErrRangeReduce returns only when all range reducers and pair
-// reducers have terminated. ErrRangeReduce also returns the left-most
-// error value that is different from nil as a second return value.
+// with 0 <= low <= high, and ErrRangeReduce returns only when all range
+// reducers and pair reducers have terminated. ErrRangeReduce also returns
+// the left-most error value that is different from nil as a second return
+// value.
 //
 // ErrRangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrRangeReduce eventually panics
 // with the left-most recovered panic value.
-func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.ErrPairReducer) (interface{}, error) {
+func ErrRangeReduce(
+	low, high, n int,
+	reduce func(low, high int) (interface{}, error),
+	pair func(x, y interface{}) (interface{}, error),
+) (interface{}, error) {
 	var recur func(int, int, int) (interface{}, error)
 	recur = func(low, high, n int) (result interface{}, err error) {
 		switch {
@@ -815,8 +842,8 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// IntRangeReduce receives a range, a batch count, an IntRangeReducer,
-// and an IntPairReducer function, divides the range into batches, and
+// IntRangeReduce receives a range, a batch count n, a range reducer reduce,
+// and a pair reducer pair, divides the range into batches, and
 // invokes the range reducer for each of these batches in parallel,
 // covering the half-open interval from low to high, including low but
 // excluding high. The results of the range reducer invocations are
@@ -828,15 +855,19 @@ func ErrRangeReduce(low, high, n int, reduce pargo.ErrRangeReducer, pair pargo.E
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and RangeReduce returns only when all range reducers and pair
-// reducers have terminated.
+// with 0 <= low <= high, and RangeReduce returns only when all range
+// reducers and pair reducers have terminated.
 //
 // IntRangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and IntRangeReduce eventually panics
 // with the left-most recovered panic value.
-func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.IntPairReducer) int {
+func IntRangeReduce(
+	low, high, n int,
+	reduce func(low, high int) int,
+	pair func(x, y int) int,
+) int {
 	var recur func(int, int, int) int
 	recur = func(low, high, n int) (result int) {
 		switch {
@@ -873,13 +904,12 @@ func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.I
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrIntRangeReduce receives a range, a batch count, an
-// ErrIntRangeReducer, and an ErrIntPairReducer function, divides the
-// range into batches, and invokes the range reducer for each of these
-// batches in parallel, covering the half-open interval from low to
-// high, including low but excluding high. The results of the range
-// reducer invocations are then combined by repeated invocations of
-// the pair reducer.
+// ErrIntRangeReduce receives a range, a batch count n, a range reducer
+// reduce, and a pair reducer pair, divides the range into batches, and
+// invokes the range reducer for each of these batches in parallel,
+// covering the half-open interval from low to high, including low but
+// excluding high. The results of the range reducer invocations are then
+// combined by repeated invocations of the pair reducer.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -887,17 +917,21 @@ func IntRangeReduce(low, high, n int, reduce pargo.IntRangeReducer, pair pargo.I
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and ErrIntRangeReduce returns only when all range reducers and pair
-// reducers have terminated. ErrIntRangeReduce also returns the
-// left-most error value that is different from nil as a second return
-// value.
+// with 0 <= low <= high, and ErrIntRangeReduce returns only when all
+// range reducers and pair reducers have terminated. ErrIntRangeReduce
+// also returns the left-most error value that is different from nil as
+// a second return value.
 //
 // ErrIntRangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrIntRangeReduce eventually
 // panics with the left-most recovered panic value.
-func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair pargo.ErrIntPairReducer) (int, error) {
+func ErrIntRangeReduce(
+	low, high, n int,
+	reduce func(low, high int) (int, error),
+	pair func(x, y int) (int, error),
+) (int, error) {
 	var recur func(int, int, int) (int, error)
 	recur = func(low, high, n int) (result int, err error) {
 		switch {
@@ -942,13 +976,12 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// Float64RangeReduce receives a range, a batch count, a
-// Float64RangeReducer, and a Float64PairReducer function, divides the
-// range into batches, and invokes the range reducer for each of these
-// batches in parallel, covering the half-open interval from low to
-// high, including low but excluding high. The results of the range
-// reducer invocations are then combined by repeated invocations of
-// the pair reducer.
+// Float64RangeReduce receives a range, a batch count n, a range reducer
+// reduce, and a pair reducer pair, divides the range into batches, and
+// invokes the range reducer for each of these batches in parallel,
+// covering the half-open interval from low to high, including low but
+// excluding high. The results of the range reducer invocations are then
+// combined by repeated invocations of the pair reducer.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -956,15 +989,19 @@ func ErrIntRangeReduce(low, high, n int, reduce pargo.ErrIntRangeReducer, pair p
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and RangeReduce returns only when all range reducers and pair
-// reducers have terminated.
+// with 0 <= low <= high, and RangeReduce returns only when all range
+// reducers and pair reducers have terminated.
 //
 // Float64RangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and Float64RangeReduce eventually
 // panics with the left-most recovered panic value.
-func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair pargo.Float64PairReducer) float64 {
+func Float64RangeReduce(
+	low, high, n int,
+	reduce func(low, high int) float64,
+	pair func(x, y float64) float64,
+) float64 {
 	var recur func(int, int, int) float64
 	recur = func(low, high, n int) (result float64) {
 		switch {
@@ -1001,13 +1038,13 @@ func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrFloat64RangeReduce receives a range, a batch count, an
-// ErrFloat64RangeReducer, and an ErrFloat64PairReducer function,
-// divides the range into batches, and invokes the range reducer for
-// each of these batches in parallel, covering the half-open interval
-// from low to high, including low but excluding high. The results of
-// the range reducer invocations are then combined by repeated
-// invocations of the pair reducer.
+// ErrFloat64RangeReduce receives a range, a batch count n, a range
+// reducer reduce, and a pair reducer pair, divides the range into
+// batches, and invokes the range reducer for each of these batches
+// in parallel, covering the half-open interval from low to high,
+// including low but excluding high. The results of the range reducer
+// invocations are then combined by repeated invocations of the pair
+// reducer.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -1015,17 +1052,21 @@ func Float64RangeReduce(low, high, n int, reduce pargo.Float64RangeReducer, pair
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and ErrFloat64RangeReduce returns only when all range reducers and
-// pair reducers have terminated. ErrFloat64RangeReduce also returns
-// the left-most error value that is different from nil as a second
-// return value.
+// with 0 <= low <= high, and ErrFloat64RangeReduce returns only when
+// all range reducers and pair reducers have terminated.
+// ErrFloat64RangeReduce also returns the left-most error value that
+// is different from nil as a second return value.
 //
 // ErrFloat64RangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrFloat64RangeReduce eventually
 // panics with the left-most recovered panic value.
-func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer, pair pargo.ErrFloat64PairReducer) (float64, error) {
+func ErrFloat64RangeReduce(
+	low, high, n int,
+	reduce func(low, high int) (float64, error),
+	pair func(x, y float64) (float64, error),
+) (float64, error) {
 	var recur func(int, int, int) (float64, error)
 	recur = func(low, high, n int) (result float64, err error) {
 		switch {
@@ -1070,13 +1111,12 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// StringRangeReduce receives a range, a batch count, a
-// StringRangeReducer, and a StringPairReducer function, divides the
-// range into batches, and invokes the range reducer for each of these
-// batches in parallel, covering the half-open interval from low to
-// high, including low but excluding high. The results of the range
-// reducer invocations are then combined by repeated invocations of
-// the pair reducer.
+// StringRangeReduce receives a range, a batch count n, a range reducer
+// reduce, and a pair reducer pair, divides the range into batches, and
+// invokes the range reducer for each of these batches in parallel,
+// covering the half-open interval from low to high, including low but
+// excluding high. The results of the range reducer invocations are then
+// combined by repeated invocations of the pair reducer.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -1084,15 +1124,19 @@ func ErrFloat64RangeReduce(low, high, n int, reduce pargo.ErrFloat64RangeReducer
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and RangeReduce returns only when all range reducers and pair
-// reducers have terminated.
+// with 0 <= low <= high, and RangeReduce returns only when all range
+// reducers and pair reducers have terminated.
 //
 // StringRangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and StringRangeReduce eventually
 // panics with the left-most recovered panic value.
-func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair pargo.StringPairReducer) string {
+func StringRangeReduce(
+	low, high, n int,
+	reduce func(low, high int) string,
+	pair func(x, y string) string,
+) string {
 	var recur func(int, int, int) string
 	recur = func(low, high, n int) (result string) {
 		switch {
@@ -1129,13 +1173,13 @@ func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair p
 	return recur(low, high, internal.ComputeNofBatches(low, high, n))
 }
 
-// ErrStringRangeReduce receives a range, a batch count, an
-// ErrStringRangeReducer, and an ErrStringPairReducer function,
-// divides the range into batches, and invokes the range reducer for
-// each of these batches in parallel, covering the half-open interval
-// from low to high, including low but excluding high. The results of
-// the range reducer invocations are then combined by repeated
-// invocations of the pair reducer.
+// ErrStringRangeReduce receives a range, a batch count n, a range
+// reducer reduce, and a pair reducer pair, divides the range into
+// batches, and invokes the range reducer for each of these batches
+// in parallel, covering the half-open interval from low to high,
+// including low but excluding high. The results of the range reducer
+// invocations are then combined by repeated invocations of the pair
+// reducer.
 //
 // The range is specified by a low and high integer, with low <=
 // high. The batches are determined by dividing up the size of the
@@ -1143,17 +1187,21 @@ func StringRangeReduce(low, high, n int, reduce pargo.StringRangeReducer, pair p
 // that takes runtime.GOMAXPROCS(0) into account.
 //
 // The range reducer is invoked for each batch in its own goroutine,
-// and ErrStringRangeReduce returns only when all range reducers and
-// pair reducers have terminated. ErrStringRangeReduce also returns
-// the left-most error value that is different from nil as a second
-// return value.
+// with 0 <= low <= high, and ErrStringRangeReduce returns only when
+// all range reducers and pair reducers have terminated.
+// ErrStringRangeReduce also returns the left-most error value that
+// is different from nil as a second return value.
 //
 // ErrStringRangeReduce panics if high < low, or if n < 0.
 //
 // If one or more reducer invocations panic, the corresponding
 // goroutines recover the panics, and ErrStringRangeReduce eventually
 // panics with the left-most recovered panic value.
-func ErrStringRangeReduce(low, high, n int, reduce pargo.ErrStringRangeReducer, pair pargo.ErrStringPairReducer) (string, error) {
+func ErrStringRangeReduce(
+	low, high, n int,
+	reduce func(low, high int) (string, error),
+	pair func(x, y string) (string, error),
+) (string, error) {
 	var recur func(int, int, int) (string, error)
 	recur = func(low, high, n int) (result string, err error) {
 		switch {

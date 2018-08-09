@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/exascience/pargo"
 	"github.com/exascience/pargo/parallel"
 	"github.com/exascience/pargo/speculative"
 )
@@ -189,7 +188,10 @@ func (m *Map) DeleteOrCompute(key Hasher, computer func() interface{}) (actual i
 // This is the most general modification function for parallel
 // maps. Other functions that modify the map are potentially more
 // efficient, so it is better to be more specific if possible.
-func (m *Map) Modify(key Hasher, modifier func(value interface{}, ok bool) (replacement interface{}, storeNotDelete bool)) (replacement interface{}, storeNotDelete bool) {
+func (m *Map) Modify(
+	key Hasher,
+	modifier func(value interface{}, ok bool) (replacement interface{}, storeNotDelete bool),
+) (replacement interface{}, storeNotDelete bool) {
 	split := m.Split(key)
 	split.Lock()
 	value, ok := split.Map[key]
@@ -677,7 +679,10 @@ func (split *Split) splitReduce(reduce func(map[interface{}]interface{}) interfa
 // the value for any key is stored or deleted concurrently, Reduce may
 // reflect any mapping for that key from any point during the Reduce
 // call.
-func (m *Map) Reduce(reduce func(map[interface{}]interface{}) interface{}, pair pargo.PairReducer) interface{} {
+func (m *Map) Reduce(
+	reduce func(map[interface{}]interface{}) interface{},
+	pair func(x, y interface{}) interface{},
+) interface{} {
 	if len(m.splits) == 0 {
 		return nil
 	}
@@ -707,7 +712,10 @@ func (m *Map) Reduce(reduce func(map[interface{}]interface{}) interface{}, pair 
 // the value for any key is stored or deleted concurrently, ParallelReduce may
 // reflect any mapping for that key from any point during the ParallelReduce
 // call.
-func (m *Map) ParallelReduce(reduce func(map[interface{}]interface{}) interface{}, pair pargo.PairReducer) interface{} {
+func (m *Map) ParallelReduce(
+	reduce func(map[interface{}]interface{}) interface{},
+	pair func(x, y interface{}) interface{},
+) interface{} {
 	return parallel.RangeReduce(0, len(m.splits), 0, func(low, high int) interface{} {
 		if low >= high {
 			return nil
@@ -739,7 +747,10 @@ func (split *Split) splitIntReduce(reduce func(map[interface{}]interface{}) int)
 // the value for any key is stored or deleted concurrently, IntReduce may
 // reflect any mapping for that key from any point during the IntReduce
 // call.
-func (m *Map) IntReduce(reduce func(map[interface{}]interface{}) int, pair pargo.IntPairReducer) int {
+func (m *Map) IntReduce(
+	reduce func(map[interface{}]interface{}) int,
+	pair func(x, y int) int,
+) int {
 	if len(m.splits) == 0 {
 		return 0
 	}
@@ -769,7 +780,10 @@ func (m *Map) IntReduce(reduce func(map[interface{}]interface{}) int, pair pargo
 // the value for any key is stored or deleted concurrently, ParallelIntReduce may
 // reflect any mapping for that key from any point during the ParallelIntReduce
 // call.
-func (m *Map) ParallelIntReduce(reduce func(map[interface{}]interface{}) int, pair pargo.IntPairReducer) int {
+func (m *Map) ParallelIntReduce(
+	reduce func(map[interface{}]interface{}) int,
+	pair func(x, y int) int,
+) int {
 	return parallel.IntRangeReduce(0, len(m.splits), 0, func(low, high int) int {
 		if low >= high {
 			return 0
@@ -801,7 +815,10 @@ func (split *Split) splitFloat64Reduce(reduce func(map[interface{}]interface{}) 
 // the value for any key is stored or deleted concurrently, Float64Reduce may
 // reflect any mapping for that key from any point during the Float64Reduce
 // call.
-func (m *Map) Float64Reduce(reduce func(map[interface{}]interface{}) float64, pair pargo.Float64PairReducer) float64 {
+func (m *Map) Float64Reduce(
+	reduce func(map[interface{}]interface{}) float64,
+	pair func(x, y float64) float64,
+) float64 {
 	if len(m.splits) == 0 {
 		return 0
 	}
@@ -831,7 +848,10 @@ func (m *Map) Float64Reduce(reduce func(map[interface{}]interface{}) float64, pa
 // the value for any key is stored or deleted concurrently, ParallelFloat64Reduce may
 // reflect any mapping for that key from any point during the ParallelFloat64Reduce
 // call.
-func (m *Map) ParallelFloat64Reduce(reduce func(map[interface{}]interface{}) float64, pair pargo.Float64PairReducer) float64 {
+func (m *Map) ParallelFloat64Reduce(
+	reduce func(map[interface{}]interface{}) float64,
+	pair func(x, y float64) float64,
+) float64 {
 	return parallel.Float64RangeReduce(0, len(m.splits), 0, func(low, high int) float64 {
 		if low >= high {
 			return 0
@@ -863,7 +883,10 @@ func (split *Split) splitStringReduce(reduce func(map[interface{}]interface{}) s
 // the value for any key is stored or deleted concurrently, StringReduce may
 // reflect any mapping for that key from any point during the StringReduce
 // call.
-func (m *Map) StringReduce(reduce func(map[interface{}]interface{}) string, pair pargo.StringPairReducer) string {
+func (m *Map) StringReduce(
+	reduce func(map[interface{}]interface{}) string,
+	pair func(x, y string) string,
+) string {
 	if len(m.splits) == 0 {
 		return ""
 	}
@@ -893,7 +916,10 @@ func (m *Map) StringReduce(reduce func(map[interface{}]interface{}) string, pair
 // the value for any key is stored or deleted concurrently, ParallelStringReduce may
 // reflect any mapping for that key from any point during the ParallelStringReduce
 // call.
-func (m *Map) ParallelStringReduce(reduce func(map[interface{}]interface{}) string, pair pargo.StringPairReducer) string {
+func (m *Map) ParallelStringReduce(
+	reduce func(map[interface{}]interface{}) string,
+	pair func(x, y string) string,
+) string {
 	return parallel.StringRangeReduce(0, len(m.splits), 0, func(low, high int) string {
 		if low >= high {
 			return ""
@@ -928,7 +954,10 @@ func (split *Split) splitErrReduce(reduce func(map[interface{}]interface{}) (int
 // the value for any key is stored or deleted concurrently, ErrReduce may
 // reflect any mapping for that key from any point during the ErrReduce
 // call.
-func (m *Map) ErrReduce(reduce func(map[interface{}]interface{}) (interface{}, error), pair pargo.ErrPairReducer) (interface{}, error) {
+func (m *Map) ErrReduce(
+	reduce func(map[interface{}]interface{}) (interface{}, error),
+	pair func(x, y interface{}) (interface{}, error),
+) (interface{}, error) {
 	if len(m.splits) == 0 {
 		return nil, nil
 	}
@@ -967,7 +996,10 @@ func (m *Map) ErrReduce(reduce func(map[interface{}]interface{}) (interface{}, e
 // the value for any key is stored or deleted concurrently, ParallelErrReduce may
 // reflect any mapping for that key from any point during the ParallelErrReduce
 // call.
-func (m *Map) ParallelErrReduce(reduce func(map[interface{}]interface{}) (interface{}, error), pair pargo.ErrPairReducer) (interface{}, error) {
+func (m *Map) ParallelErrReduce(
+	reduce func(map[interface{}]interface{}) (interface{}, error),
+	pair func(x, y interface{}) (interface{}, error),
+) (interface{}, error) {
 	return parallel.ErrRangeReduce(0, len(m.splits), 0, func(low, high int) (interface{}, error) {
 		if low >= high {
 			return nil, nil
@@ -1009,7 +1041,10 @@ func (m *Map) ParallelErrReduce(reduce func(map[interface{}]interface{}) (interf
 // the value for any key is stored or deleted concurrently, SpeculativeErrReduce may
 // reflect any mapping for that key from any point during the SpeculativeErrReduce
 // call.
-func (m *Map) SpeculativeErrReduce(reduce func(map[interface{}]interface{}) (interface{}, error), pair pargo.ErrPairReducer) (interface{}, error) {
+func (m *Map) SpeculativeErrReduce(
+	reduce func(map[interface{}]interface{}) (interface{}, error),
+	pair func(x, y interface{}) (interface{}, error),
+) (interface{}, error) {
 	return speculative.ErrRangeReduce(0, len(m.splits), 0, func(low, high int) (interface{}, error) {
 		if low >= high {
 			return nil, nil
@@ -1050,7 +1085,10 @@ func (split *Split) splitErrIntReduce(reduce func(map[interface{}]interface{}) (
 // the value for any key is stored or deleted concurrently, ErrIntReduce may
 // reflect any mapping for that key from any point during the ErrIntReduce
 // call.
-func (m *Map) ErrIntReduce(reduce func(map[interface{}]interface{}) (int, error), pair pargo.ErrIntPairReducer) (int, error) {
+func (m *Map) ErrIntReduce(
+	reduce func(map[interface{}]interface{}) (int, error),
+	pair func(x, y int) (int, error),
+) (int, error) {
 	if len(m.splits) == 0 {
 		return 0, nil
 	}
@@ -1089,7 +1127,10 @@ func (m *Map) ErrIntReduce(reduce func(map[interface{}]interface{}) (int, error)
 // the value for any key is stored or deleted concurrently, ParallelErrIntReduce may
 // reflect any mapping for that key from any point during the ParallelErrIntReduce
 // call.
-func (m *Map) ParallelErrIntReduce(reduce func(map[interface{}]interface{}) (int, error), pair pargo.ErrIntPairReducer) (int, error) {
+func (m *Map) ParallelErrIntReduce(
+	reduce func(map[interface{}]interface{}) (int, error),
+	pair func(x, y int) (int, error),
+) (int, error) {
 	return parallel.ErrIntRangeReduce(0, len(m.splits), 0, func(low, high int) (int, error) {
 		if low >= high {
 			return 0, nil
@@ -1131,7 +1172,10 @@ func (m *Map) ParallelErrIntReduce(reduce func(map[interface{}]interface{}) (int
 // the value for any key is stored or deleted concurrently, SpeculativeErrIntReduce may
 // reflect any mapping for that key from any point during the SpeculativeErrIntReduce
 // call.
-func (m *Map) SpeculativeErrIntReduce(reduce func(map[interface{}]interface{}) (int, error), pair pargo.ErrIntPairReducer) (int, error) {
+func (m *Map) SpeculativeErrIntReduce(
+	reduce func(map[interface{}]interface{}) (int, error),
+	pair func(x, y int) (int, error),
+) (int, error) {
 	return speculative.ErrIntRangeReduce(0, len(m.splits), 0, func(low, high int) (int, error) {
 		if low >= high {
 			return 0, nil
@@ -1172,7 +1216,10 @@ func (split *Split) splitErrFloat64Reduce(reduce func(map[interface{}]interface{
 // the value for any key is stored or deleted concurrently, ErrFloat64Reduce may
 // reflect any mapping for that key from any point during the ErrFloat64Reduce
 // call.
-func (m *Map) ErrFloat64Reduce(reduce func(map[interface{}]interface{}) (float64, error), pair pargo.ErrFloat64PairReducer) (float64, error) {
+func (m *Map) ErrFloat64Reduce(
+	reduce func(map[interface{}]interface{}) (float64, error),
+	pair func(x, y float64) (float64, error),
+) (float64, error) {
 	if len(m.splits) == 0 {
 		return 0, nil
 	}
@@ -1211,7 +1258,10 @@ func (m *Map) ErrFloat64Reduce(reduce func(map[interface{}]interface{}) (float64
 // the value for any key is stored or deleted concurrently, ParallelErrFloat64Reduce may
 // reflect any mapping for that key from any point during the ParallelErrFloat64Reduce
 // call.
-func (m *Map) ParallelErrFloat64Reduce(reduce func(map[interface{}]interface{}) (float64, error), pair pargo.ErrFloat64PairReducer) (float64, error) {
+func (m *Map) ParallelErrFloat64Reduce(
+	reduce func(map[interface{}]interface{}) (float64, error),
+	pair func(x, y float64) (float64, error),
+) (float64, error) {
 	return parallel.ErrFloat64RangeReduce(0, len(m.splits), 0, func(low, high int) (float64, error) {
 		if low >= high {
 			return 0, nil
@@ -1253,7 +1303,10 @@ func (m *Map) ParallelErrFloat64Reduce(reduce func(map[interface{}]interface{}) 
 // the value for any key is stored or deleted concurrently, SpeculativeErrFloat64Reduce may
 // reflect any mapping for that key from any point during the SpeculativeErrFloat64Reduce
 // call.
-func (m *Map) SpeculativeErrFloat64Reduce(reduce func(map[interface{}]interface{}) (float64, error), pair pargo.ErrFloat64PairReducer) (float64, error) {
+func (m *Map) SpeculativeErrFloat64Reduce(
+	reduce func(map[interface{}]interface{}) (float64, error),
+	pair func(x, y float64) (float64, error),
+) (float64, error) {
 	return speculative.ErrFloat64RangeReduce(0, len(m.splits), 0, func(low, high int) (float64, error) {
 		if low >= high {
 			return 0, nil
@@ -1294,7 +1347,10 @@ func (split *Split) splitErrStringReduce(reduce func(map[interface{}]interface{}
 // the value for any key is stored or deleted concurrently, ErrStringReduce may
 // reflect any mapping for that key from any point during the ErrStringReduce
 // call.
-func (m *Map) ErrStringReduce(reduce func(map[interface{}]interface{}) (string, error), pair pargo.ErrStringPairReducer) (string, error) {
+func (m *Map) ErrStringReduce(
+	reduce func(map[interface{}]interface{}) (string, error),
+	pair func(x, y string) (string, error),
+) (string, error) {
 	if len(m.splits) == 0 {
 		return "", nil
 	}
@@ -1333,7 +1389,10 @@ func (m *Map) ErrStringReduce(reduce func(map[interface{}]interface{}) (string, 
 // the value for any key is stored or deleted concurrently, ParallelErrStringReduce may
 // reflect any mapping for that key from any point during the ParallelErrStringReduce
 // call.
-func (m *Map) ParallelErrStringReduce(reduce func(map[interface{}]interface{}) (string, error), pair pargo.ErrStringPairReducer) (string, error) {
+func (m *Map) ParallelErrStringReduce(
+	reduce func(map[interface{}]interface{}) (string, error),
+	pair func(x, y string) (string, error),
+) (string, error) {
 	return parallel.ErrStringRangeReduce(0, len(m.splits), 0, func(low, high int) (string, error) {
 		if low >= high {
 			return "", nil
@@ -1375,7 +1434,10 @@ func (m *Map) ParallelErrStringReduce(reduce func(map[interface{}]interface{}) (
 // the value for any key is stored or deleted concurrently, SpeculativeErrStringReduce may
 // reflect any mapping for that key from any point during the SpeculativeErrStringReduce
 // call.
-func (m *Map) SpeculativeErrStringReduce(reduce func(map[interface{}]interface{}) (string, error), pair pargo.ErrStringPairReducer) (string, error) {
+func (m *Map) SpeculativeErrStringReduce(
+	reduce func(map[interface{}]interface{}) (string, error),
+	pair func(x, y string) (string, error),
+) (string, error) {
 	return speculative.ErrStringRangeReduce(0, len(m.splits), 0, func(low, high int) (string, error) {
 		if low >= high {
 			return "", nil
