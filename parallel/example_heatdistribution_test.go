@@ -19,9 +19,9 @@ const ε = 0.001
 
 func maxDiff(m1, m2 *mat.Dense) (result float64) {
 	rows, cols := m1.Dims()
-	return parallel.Float64RangeReduce(
+	result, _ = parallel.Float64RangeReduce(
 		1, rows-1, 0,
-		func(low, high int) (result float64) {
+		func(low, high int) (result float64, err error) {
 			for row := low; row < high; row++ {
 				r1 := m1.RawRowView(row)
 				r2 := m2.RawRowView(row)
@@ -31,14 +31,20 @@ func maxDiff(m1, m2 *mat.Dense) (result float64) {
 			}
 			return
 		},
-		math.Max,
+		func(x, y float64) (float64, error) {
+			if x > y {
+				return x, nil
+			}
+			return y, nil
+		},
 	)
+	return
 }
 
 func HeatDistributionStep(u, v *mat.Dense) {
 	rows, cols := u.Dims()
 	parallel.Range(1, rows-1, 0,
-		func(low, high int) {
+		func(low, high int) error {
 			for row := low; row < high; row++ {
 				uRow := u.RawRowView(row)
 				vRow := v.RawRowView(row)
@@ -48,6 +54,7 @@ func HeatDistributionStep(u, v *mat.Dense) {
 					uRow[col] = (vRowUp[col] + vRowDn[col] + vRow[col-1] + vRow[col+1]) / 4.0
 				}
 			}
+			return nil
 		},
 	)
 }

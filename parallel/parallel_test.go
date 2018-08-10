@@ -9,38 +9,6 @@ import (
 )
 
 func ExampleDo() {
-	var fib func(int) int
-
-	fib = func(n int) int {
-		if n < 2 {
-			return n
-		} else {
-			return fib(n-1) + fib(n-2)
-		}
-	}
-
-	var parallelFib func(int) int
-
-	parallelFib = func(n int) int {
-		if n < 20 {
-			return fib(n)
-		} else {
-			var n1, n2 int
-			parallel.Do(
-				func() { n1 = parallelFib(n - 1) },
-				func() { n2 = parallelFib(n - 2) },
-			)
-			return n1 + n2
-		}
-	}
-
-	fmt.Println(fib(30) == parallelFib(30))
-
-	// Output:
-	// true
-}
-
-func ExampleErrDo() {
 	var fib func(int) (int, error)
 
 	fib = func(n int) (result int, err error) {
@@ -69,7 +37,7 @@ func ExampleErrDo() {
 			result, err = fib(n)
 		} else {
 			var n1, n2 int
-			err = parallel.ErrDo(
+			err = parallel.Do(
 				func() error {
 					n, err := parallelFib(n - 1)
 					n1 = n
@@ -98,19 +66,20 @@ func ExampleErrDo() {
 
 func ExampleIntRangeReduce() {
 	numDivisors := func(n int) int {
-		return parallel.IntRangeReduce(
+		result, _ := parallel.IntRangeReduce(
 			1, n+1, runtime.GOMAXPROCS(0),
-			func(low, high int) int {
+			func(low, high int) (int, error) {
 				var sum int
 				for i := low; i < high; i++ {
 					if (n % i) == 0 {
 						sum++
 					}
 				}
-				return sum
+				return sum, nil
 			},
-			func(x, y int) int { return x + y },
+			func(x, y int) (int, error) { return x + y, nil },
 		)
+		return result
 	}
 
 	fmt.Println(numDivisors(12))
@@ -120,38 +89,40 @@ func ExampleIntRangeReduce() {
 }
 
 func numDivisors(n int) int {
-	return parallel.IntRangeReduce(
+	result, _ := parallel.IntRangeReduce(
 		1, n+1, runtime.GOMAXPROCS(0),
-		func(low, high int) int {
+		func(low, high int) (int, error) {
 			var sum int
 			for i := low; i < high; i++ {
 				if (n % i) == 0 {
 					sum++
 				}
 			}
-			return sum
+			return sum, nil
 		},
-		func(x, y int) int { return x + y },
+		func(x, y int) (int, error) { return x + y, nil },
 	)
+	return result
 }
 
 func ExampleRangeReduce() {
 	findPrimes := func(n int) []int {
-		return parallel.RangeReduce(
+		result, _ := parallel.RangeReduce(
 			2, n, 4*runtime.GOMAXPROCS(0),
-			func(low, high int) interface{} {
+			func(low, high int) (interface{}, error) {
 				var slice []int
 				for i := low; i < high; i++ {
 					if numDivisors(i) == 2 { // see IntRangeReduce example
 						slice = append(slice, i)
 					}
 				}
-				return slice
+				return slice, nil
 			},
-			func(x, y interface{}) interface{} {
-				return append(x.([]int), y.([]int)...)
+			func(x, y interface{}) (interface{}, error) {
+				return append(x.([]int), y.([]int)...), nil
 			},
-		).([]int)
+		)
+		return result.([]int)
 	}
 
 	fmt.Println(findPrimes(20))
@@ -162,17 +133,18 @@ func ExampleRangeReduce() {
 
 func ExampleFloat64RangeReduce() {
 	sumFloat64s := func(f []float64) float64 {
-		return parallel.Float64RangeReduce(
+		result, _ := parallel.Float64RangeReduce(
 			0, len(f), runtime.GOMAXPROCS(0),
-			func(low, high int) float64 {
+			func(low, high int) (float64, error) {
 				var sum float64
 				for i := low; i < high; i++ {
 					sum += f[i]
 				}
-				return sum
+				return sum, nil
 			},
-			func(x, y float64) float64 { return x + y },
+			func(x, y float64) (float64, error) { return x + y, nil },
 		)
+		return result
 	}
 
 	fmt.Println(sumFloat64s([]float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))

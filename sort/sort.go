@@ -52,10 +52,11 @@ func IsSorted(data sort.Interface) bool {
 			return true
 		}
 		half := size / 2
-		return speculative.And(
-			func() bool { return pTest(index, half) },
-			func() bool { return pTest(index+half, size-half) },
+		result, _ := speculative.And(
+			func() (bool, error) { return pTest(index, half), nil },
+			func() (bool, error) { return pTest(index+half, size-half), nil },
 		)
+		return result
 	}
 	return pTest(serialCutoff, size-serialCutoff)
 }

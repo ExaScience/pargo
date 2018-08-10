@@ -119,8 +119,8 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 		q3 := p3 + (q1 - p1) + (q2 - p2)
 		A.assign(q3, q1, 1)
 		parallel.Do(
-			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
-			func() { pMerge(T, q1+1, r1, q2, r2, A, q3+1) },
+			func() error { pMerge(T, p1, q1-1, p2, q2-1, A, p3); return nil },
+			func() error { pMerge(T, q1+1, r1, q2, r2, A, q3+1); return nil },
 		)
 	} else {
 		if n2 == 0 {
@@ -131,8 +131,8 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 		q3 := p3 + (q1 - p1) + (q2 - p2)
 		A.assign(q3, q2, 1)
 		parallel.Do(
-			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
-			func() { pMerge(T, q1, r1, q2+1, r2, A, q3+1) },
+			func() error { pMerge(T, p1, q1-1, p2, q2-1, A, p3); return nil },
+			func() error { pMerge(T, q1, r1, q2+1, r2, A, q3+1); return nil },
 		)
 	}
 }
@@ -173,15 +173,15 @@ func StableSort(data StableSorter) {
 			q2 := q1 + q1
 			q3 := q2 + q1
 			parallel.Do(
-				func() { pSort(index, q1) },
-				func() { pSort(index+q1, q1) },
-				func() { pSort(index+q2, q1) },
-				func() { pSort(index+q3, size-q3) },
+				func() error { pSort(index, q1); return nil },
+				func() error { pSort(index+q1, q1); return nil },
+				func() error { pSort(index+q2, q1); return nil },
+				func() error { pSort(index+q3, size-q3); return nil },
 			)
 			temp.Wait()
 			parallel.Do(
-				func() { pMerge(T, index, index+q1-1, index+q1, index+q2-1, A, index) },
-				func() { pMerge(T, index+q2, index+q3-1, index+q3, index+size-1, A, index+q2) },
+				func() error { pMerge(T, index, index+q1-1, index+q1, index+q2-1, A, index); return nil },
+				func() error { pMerge(T, index+q2, index+q3-1, index+q3, index+size-1, A, index+q2); return nil },
 			)
 			pMerge(A, index, index+q2-1, index+q2, index+size-1, T, index)
 		}

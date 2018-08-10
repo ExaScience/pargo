@@ -85,8 +85,8 @@ func Sort(data Sorter) {
 			data.Swap(j, index)
 			i = j + 1
 			parallel.Do(
-				func() { pSort(index, j-index) },
-				func() { pSort(i, index+size-i) },
+				func() error { pSort(index, j-index); return nil },
+				func() error { pSort(i, index+size-i); return nil },
 			)
 		}
 	}
