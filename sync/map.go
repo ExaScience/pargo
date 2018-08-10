@@ -530,7 +530,7 @@ func (m *Map) Reduce(
 		return nil, nil
 	}
 	result, err := m.splits[0].splitReduce(reduce)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 	for i := 1; i < len(m.splits); i++ {
@@ -573,7 +573,7 @@ func (m *Map) ParallelReduce(
 			return nil, nil
 		}
 		result, err := m.splits[low].splitReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return nil, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -618,7 +618,7 @@ func (m *Map) SpeculativeReduce(
 			return nil, nil
 		}
 		result, err := m.splits[low].splitReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return nil, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -661,7 +661,7 @@ func (m *Map) IntReduce(
 		return 0, nil
 	}
 	result, err := m.splits[0].splitIntReduce(reduce)
-	if err == nil {
+	if err != nil {
 		return 0, err
 	}
 	for i := 1; i < len(m.splits); i++ {
@@ -704,7 +704,7 @@ func (m *Map) ParallelIntReduce(
 			return 0, nil
 		}
 		result, err := m.splits[low].splitIntReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return 0, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -749,7 +749,7 @@ func (m *Map) SpeculativeIntReduce(
 			return 0, nil
 		}
 		result, err := m.splits[low].splitIntReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return 0, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -792,7 +792,7 @@ func (m *Map) Float64Reduce(
 		return 0, nil
 	}
 	result, err := m.splits[0].splitFloat64Reduce(reduce)
-	if err == nil {
+	if err != nil {
 		return 0, err
 	}
 	for i := 1; i < len(m.splits); i++ {
@@ -835,7 +835,7 @@ func (m *Map) ParallelFloat64Reduce(
 			return 0, nil
 		}
 		result, err := m.splits[low].splitFloat64Reduce(reduce)
-		if err == nil {
+		if err != nil {
 			return 0, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -880,7 +880,7 @@ func (m *Map) SpeculativeFloat64Reduce(
 			return 0, nil
 		}
 		result, err := m.splits[low].splitFloat64Reduce(reduce)
-		if err == nil {
+		if err != nil {
 			return 0, err
 		}
 		for i := low + 1; i < high; i++ {
@@ -923,7 +923,7 @@ func (m *Map) StringReduce(
 		return "", nil
 	}
 	result, err := m.splits[0].splitStringReduce(reduce)
-	if err == nil {
+	if err != nil {
 		return "", err
 	}
 	for i := 1; i < len(m.splits); i++ {
@@ -966,7 +966,7 @@ func (m *Map) ParallelStringReduce(
 			return "", nil
 		}
 		result, err := m.splits[low].splitStringReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return "", err
 		}
 		for i := low + 1; i < high; i++ {
@@ -1011,7 +1011,7 @@ func (m *Map) SpeculativeStringReduce(
 			return "", nil
 		}
 		result, err := m.splits[low].splitStringReduce(reduce)
-		if err == nil {
+		if err != nil {
 			return "", err
 		}
 		for i := low + 1; i < high; i++ {
