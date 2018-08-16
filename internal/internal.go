@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
+	"runtime/debug"
 )
 
 // ComputeNofBatches divides the size of the range (high - low) by
@@ -28,4 +30,24 @@ func ComputeNofBatches(low, high, n int) (batches int) {
 		panic(fmt.Sprintf("invalid range: %v:%v", low, high))
 	}
 	return
+}
+
+type runtimeError struct{ error }
+
+func (runtimeError) RuntimeError() {}
+
+// WrapPanic adds stack trace information to a recovered panic.
+func WrapPanic(p interface{}) interface{} {
+	if p != nil {
+		s := fmt.Sprintf("%v\n%s\nrethrown at", p, debug.Stack())
+		if _, isError := p.(error); isError {
+			r := errors.New(s)
+			if _, isRuntimeError := p.(runtime.Error); isRuntimeError {
+				return runtimeError{r}
+			}
+			return r
+		}
+		return s
+	}
+	return nil
 }

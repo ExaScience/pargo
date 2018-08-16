@@ -36,7 +36,7 @@ func Do(thunks ...func() error) (err error) {
 	case 2:
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			err1 = thunks[1]()
@@ -46,7 +46,7 @@ func Do(thunks ...func() error) (err error) {
 		half := len(thunks) / 2
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			err1 = Do(thunks[half:]...)
@@ -93,7 +93,7 @@ func And(predicates ...func() (bool, error)) (result bool, err error) {
 	case 2:
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			b1, err1 = predicates[1]()
@@ -103,7 +103,7 @@ func And(predicates ...func() (bool, error)) (result bool, err error) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			b1, err1 = And(predicates[half:]...)
@@ -151,7 +151,7 @@ func Or(predicates ...func() (bool, error)) (result bool, err error) {
 	case 2:
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			b1, err1 = predicates[1]()
@@ -161,7 +161,7 @@ func Or(predicates ...func() (bool, error)) (result bool, err error) {
 		half := len(predicates) / 2
 		go func() {
 			defer func() {
-				p = recover()
+				p = internal.WrapPanic(recover())
 				wg.Done()
 			}()
 			b1, err1 = Or(predicates[half:]...)
@@ -223,7 +223,7 @@ func Range(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				err1 = recur(mid, high, n-half)
@@ -291,7 +291,7 @@ func RangeAnd(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				b1, err1 = recur(mid, high, n-half)
@@ -360,7 +360,7 @@ func RangeOr(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				b1, err1 = recur(mid, high, n-half)
@@ -431,7 +431,7 @@ func RangeReduce(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
@@ -503,7 +503,7 @@ func IntRangeReduce(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
@@ -576,7 +576,7 @@ func Float64RangeReduce(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
@@ -649,7 +649,7 @@ func StringRangeReduce(
 			wg.Add(1)
 			go func() {
 				defer func() {
-					p = recover()
+					p = internal.WrapPanic(recover())
 					wg.Done()
 				}()
 				right, err1 = recur(mid, high, n-half)
