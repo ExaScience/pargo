@@ -28,58 +28,58 @@ func ExampleDo() {
 		return
 	}
 
-	var parallelFib func(int) (int, error)
+	type intErr struct {
+		n   int
+		err error
+	}
 
-	parallelFib = func(n int) (result int, err error) {
+	var parallelFib func(int) intErr
+
+	parallelFib = func(n int) (result intErr) {
 		if n < 0 {
-			err = errors.New("invalid argument")
+			result.err = errors.New("invalid argument")
 		} else if n < 20 {
-			result, err = fib(n)
+			result.n, result.err = fib(n)
 		} else {
-			var n1, n2 int
-			err = parallel.Do(
-				func() error {
-					n, err := parallelFib(n - 1)
-					n1 = n
-					return err
-				},
-				func() error {
-					n, err := parallelFib(n - 2)
-					n2 = n
-					return err
-				},
+			var n1, n2 intErr
+			parallel.Do(
+				func() { n1 = parallelFib(n - 1) },
+				func() { n2 = parallelFib(n - 2) },
 			)
-			result = n1 + n2
+			result.n = n1.n + n2.n
+			if n1.err != nil {
+				result.err = n1.err
+			} else {
+				result.err = n2.err
+			}
 		}
 		return
 	}
 
-	if result, err := parallelFib(-1); err != nil {
-		fmt.Println(err)
+	if result := parallelFib(-1); result.err != nil {
+		fmt.Println(result.err)
 	} else {
-		fmt.Println(result)
+		fmt.Println(result.n)
 	}
 
 	// Output:
 	// invalid argument
 }
 
-func ExampleIntRangeReduce() {
+func ExampleRangeReduceIntSum() {
 	numDivisors := func(n int) int {
-		result, _ := parallel.IntRangeReduce(
+		return parallel.RangeReduceIntSum(
 			1, n+1, runtime.GOMAXPROCS(0),
-			func(low, high int) (int, error) {
+			func(low, high int) int {
 				var sum int
 				for i := low; i < high; i++ {
 					if (n % i) == 0 {
 						sum++
 					}
 				}
-				return sum, nil
+				return sum
 			},
-			func(x, y int) (int, error) { return x + y, nil },
 		)
-		return result
 	}
 
 	fmt.Println(numDivisors(12))
@@ -89,37 +89,35 @@ func ExampleIntRangeReduce() {
 }
 
 func numDivisors(n int) int {
-	result, _ := parallel.IntRangeReduce(
+	return parallel.RangeReduceIntSum(
 		1, n+1, runtime.GOMAXPROCS(0),
-		func(low, high int) (int, error) {
+		func(low, high int) int {
 			var sum int
 			for i := low; i < high; i++ {
 				if (n % i) == 0 {
 					sum++
 				}
 			}
-			return sum, nil
+			return sum
 		},
-		func(x, y int) (int, error) { return x + y, nil },
 	)
-	return result
 }
 
 func ExampleRangeReduce() {
 	findPrimes := func(n int) []int {
-		result, _ := parallel.RangeReduce(
+		result := parallel.RangeReduce(
 			2, n, 4*runtime.GOMAXPROCS(0),
-			func(low, high int) (interface{}, error) {
+			func(low, high int) interface{} {
 				var slice []int
 				for i := low; i < high; i++ {
-					if numDivisors(i) == 2 { // see IntRangeReduce example
+					if numDivisors(i) == 2 { // see RangeReduceInt example
 						slice = append(slice, i)
 					}
 				}
-				return slice, nil
+				return slice
 			},
-			func(x, y interface{}) (interface{}, error) {
-				return append(x.([]int), y.([]int)...), nil
+			func(x, y interface{}) interface{} {
+				return append(x.([]int), y.([]int)...)
 			},
 		)
 		return result.([]int)
@@ -131,18 +129,17 @@ func ExampleRangeReduce() {
 	// [2 3 5 7 11 13 17 19]
 }
 
-func ExampleFloat64RangeReduce() {
+func ExampleRangeReduceFloat64Sum() {
 	sumFloat64s := func(f []float64) float64 {
-		result, _ := parallel.Float64RangeReduce(
+		result := parallel.RangeReduceFloat64Sum(
 			0, len(f), runtime.GOMAXPROCS(0),
-			func(low, high int) (float64, error) {
+			func(low, high int) float64 {
 				var sum float64
 				for i := low; i < high; i++ {
 					sum += f[i]
 				}
-				return sum, nil
+				return sum
 			},
-			func(x, y float64) (float64, error) { return x + y, nil },
 		)
 		return result
 	}

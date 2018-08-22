@@ -1,5 +1,4 @@
-// Package sort provides implementations of parallel sorting
-// algorithms.
+// Package sort provides implementations of parallel sorting algorithms.
 package sort
 
 import (
@@ -9,23 +8,21 @@ import (
 	"github.com/exascience/pargo/speculative"
 )
 
-// SequentialSorter is a type, typically a collection, that can be
-// sequentially sorted. This is needed as a base case for the parallel
-// sorting algorithms in this package. It is recommended to implement
-// this interface by using the functions in the sort package of Go's
-// standard library.
+// SequentialSorter is a type, typically a collection, that can be sequentially
+// sorted. This is needed as a base case for the parallel sorting algorithms in
+// this package. It is recommended to implement this interface by using the
+// functions in the sort package of Go's standard library.
 type SequentialSorter interface {
 	// Sort the range that starts at index i and ends at index j. If the
-	// collection that is represented by this interface is a slice, then
-	// the slice expression collection[i:j] returns the correct slice to
-	// be sorted.
+	// collection that is represented by this interface is a slice, then the
+	// slice expression collection[i:j] returns the correct slice to be sorted.
 	SequentialSort(i, j int)
 }
 
 const serialCutoff = 10
 
-// IsSorted determines in parallel whether data is already sorted. It
-// attempts to terminate early when the return value is false.
+// IsSorted determines in parallel whether data is already sorted. It attempts
+// to terminate early when the return value is false.
 func IsSorted(data sort.Interface) bool {
 	size := data.Len()
 	if size < qsortGrainSize {
@@ -52,17 +49,17 @@ func IsSorted(data sort.Interface) bool {
 			return true
 		}
 		half := size / 2
-		result, _ := speculative.And(
-			func() (bool, error) { return pTest(index, half), nil },
-			func() (bool, error) { return pTest(index+half, size-half), nil },
+		result := speculative.And(
+			func() bool { return pTest(index, half) },
+			func() bool { return pTest(index+half, size-half) },
 		)
 		return result
 	}
 	return pTest(serialCutoff, size-serialCutoff)
 }
 
-// IntSlice attaches the methods of sort.Interface, SequentialSorter,
-// Sorter, and StableSorter to []int, sorting in increasing order.
+// IntSlice attaches the methods of sort.Interface, SequentialSorter, Sorter,
+// and StableSorter to []int, sorting in increasing order.
 type IntSlice []int
 
 // SequentialSort implements the method of of the SequentialSorter interface.
@@ -95,16 +92,15 @@ func (s IntSlice) Assign(source StableSorter) func(i, j, len int) {
 	}
 }
 
-// IntsAreSorted determines in parallel whether a slice of ints is
-// already sorted in increasing order. It attempts to terminate early
-// when the return value is false.
+// IntsAreSorted determines in parallel whether a slice of ints is already
+// sorted in increasing order. It attempts to terminate early when the return
+// value is false.
 func IntsAreSorted(a []int) bool {
 	return IsSorted(IntSlice(a))
 }
 
-// Float64Slice attaches the methods of sort.Interface,
-// SequentialSorter, Sorter, and StableSorter to []float64, sorting in
-// increasing order.
+// Float64Slice attaches the methods of sort.Interface, SequentialSorter,
+// Sorter, and StableSorter to []float64, sorting in increasing order.
 type Float64Slice []float64
 
 // SequentialSort implements the method of the SequentialSorter interface.
@@ -137,16 +133,15 @@ func (s Float64Slice) Assign(source StableSorter) func(i, j, len int) {
 	}
 }
 
-// Float64sAreSorted determines in parallel whether a slice of
-// float64s is already sorted in increasing order. It attempts to
-// terminate early when the return value is false.
+// Float64sAreSorted determines in parallel whether a slice of float64s is
+// already sorted in increasing order. It attempts to terminate early when the
+// return value is false.
 func Float64sAreSorted(a []float64) bool {
 	return IsSorted(Float64Slice(a))
 }
 
-// StringSlice attaches the methods of sort.Interface,
-// SequentialSorter, Sorter, and StableSorter to []string, sorting in
-// increasing order.
+// StringSlice attaches the methods of sort.Interface, SequentialSorter, Sorter,
+// and StableSorter to []string, sorting in increasing order.
 type StringSlice []string
 
 // SequentialSort implements the method of the SequentialSorter interface.
@@ -179,9 +174,9 @@ func (s StringSlice) Assign(source StableSorter) func(i, j, len int) {
 	}
 }
 
-// StringsAreSorted determines in parallel whether a slice of strings
-// is already sorted in increasing order. It attempts to terminate
-// early when the return value is false.
+// StringsAreSorted determines in parallel whether a slice of strings is already
+// sorted in increasing order. It attempts to terminate early when the return
+// value is false.
 func StringsAreSorted(a []string) bool {
 	return IsSorted(StringSlice(a))
 }

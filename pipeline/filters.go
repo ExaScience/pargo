@@ -9,8 +9,7 @@ import (
 
 // NewNode creates a node of the given kind, with the given filters.
 //
-// It is often more convenient to use one of the Ord, Seq, or Par
-// methods.
+// It is often more convenient to use one of the Ord, Seq, or Par methods.
 func NewNode(kind NodeKind, filters ...Filter) Node {
 	switch kind {
 	case Ordered, Sequential:
@@ -22,8 +21,7 @@ func NewNode(kind NodeKind, filters ...Filter) Node {
 	}
 }
 
-// Receive creates a Filter that returns the given receiver and a nil
-// finalizer.
+// Receive creates a Filter that returns the given receiver and a nil finalizer.
 func Receive(receive Receiver) Filter {
 	return func(_ *Pipeline, _ NodeKind, _ *int) (receiver Receiver, _ Finalizer) {
 		receiver = receive
@@ -40,8 +38,8 @@ func Finalize(finalize Finalizer) Filter {
 	}
 }
 
-// ReceiveAndFinalize creates a filter that returns the given filter
-// and receiver.
+// ReceiveAndFinalize creates a filter that returns the given filter and
+// receiver.
 func ReceiveAndFinalize(receive Receiver, finalize Finalizer) Filter {
 	return func(_ *Pipeline, _ NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
 		receiver = receive
@@ -50,17 +48,17 @@ func ReceiveAndFinalize(receive Receiver, finalize Finalizer) Filter {
 	}
 }
 
-// A Predicate is a function that is passed a data batch and returns a
-// boolean value.
+// A Predicate is a function that is passed a data batch and returns a boolean
+// value.
 //
-// In most cases, it will cast the data parameter to a specific slice
-// type and check a predicate on each element of the slice.
+// In most cases, it will cast the data parameter to a specific slice type and
+// check a predicate on each element of the slice.
 type Predicate func(data interface{}) bool
 
-// Every creates a filter that sets the result pointer to true if the
-// given predicate returns true for every data batch. If
-// cancelWhenKnown is true, this filter cancels the pipeline as soon
-// as the predicate returns false on a data batch.
+// Every creates a filter that sets the result pointer to true if the given
+// predicate returns true for every data batch. If cancelWhenKnown is true, this
+// filter cancels the pipeline as soon as the predicate returns false on a data
+// batch.
 func Every(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	*result = true
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
@@ -96,11 +94,10 @@ func Every(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	}
 }
 
-// NotEvery creates a filter that sets the result pointer to true if
-// the given predicate returns false for at least one of the data
-// batches it is passed. If cancelWhenKnown is true, this filter
-// cancels the pipeline as soon as the predicate returns false on a
-// data batch.
+// NotEvery creates a filter that sets the result pointer to true if the given
+// predicate returns false for at least one of the data batches it is passed. If
+// cancelWhenKnown is true, this filter cancels the pipeline as soon as the
+// predicate returns false on a data batch.
 func NotEvery(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	*result = false
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
@@ -136,10 +133,10 @@ func NotEvery(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	}
 }
 
-// Some creates a filter that sets the result pointer to true if the
-// given predicate returns true for at least one of the data batches
-// it is passed. If cancelWhenKnown is true, this filter cancels the
-// pipeline as soon as the predicate returns true on a data batch.
+// Some creates a filter that sets the result pointer to true if the given
+// predicate returns true for at least one of the data batches it is passed. If
+// cancelWhenKnown is true, this filter cancels the pipeline as soon as the
+// predicate returns true on a data batch.
 func Some(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	*result = false
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
@@ -175,10 +172,10 @@ func Some(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	}
 }
 
-// NotAny creates a filter that sets the result pointer to true if the
-// given predicate returns false for every data batch. If
-// cancelWhenKnown is true, this filter cancels the pipeline as soon
-// as the predicate returns true on a data batch.
+// NotAny creates a filter that sets the result pointer to true if the given
+// predicate returns false for every data batch. If cancelWhenKnown is true,
+// this filter cancels the pipeline as soon as the predicate returns true on a
+// data batch.
 func NotAny(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	*result = true
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
@@ -214,9 +211,9 @@ func NotAny(result *bool, cancelWhenKnown bool, predicate Predicate) Filter {
 	}
 }
 
-// Slice creates a filter that appends all the data batches it sees to
-// the result. The result must represent a settable slice, for example
-// by using the address operator & on a given slice.
+// Slice creates a filter that appends all the data batches it sees to the
+// result. The result must represent a settable slice, for example by using the
+// address operator & on a given slice.
 func Slice(result interface{}) Filter {
 	res := reflect.ValueOf(result).Elem()
 	return func(pipeline *Pipeline, kind NodeKind, _ *int) (receiver Receiver, finalizer Finalizer) {
@@ -248,8 +245,8 @@ func Slice(result interface{}) Filter {
 	}
 }
 
-// Count creates a filter that sets the result pointer to the total
-// size of all data batches it sees.
+// Count creates a filter that sets the result pointer to the total size of all
+// data batches it sees.
 func Count(result *int) Filter {
 	return func(pipeline *Pipeline, kind NodeKind, size *int) (receiver Receiver, finalizer Finalizer) {
 		switch {
@@ -280,11 +277,11 @@ func Count(result *int) Filter {
 	}
 }
 
-// Limit creates an ordered node with a filter that caps the total
-// size of all data batches it passes to the next filter in the
-// pipeline to the given limit. If cancelWhenKnown is true, this
-// filter cancels the pipeline as soon as the limit is reached. If
-// limit is negative, all data is passed through unmodified.
+// Limit creates an ordered node with a filter that caps the total size of all
+// data batches it passes to the next filter in the pipeline to the given limit.
+// If cancelWhenKnown is true, this filter cancels the pipeline as soon as the
+// limit is reached. If limit is negative, all data is passed through
+// unmodified.
 func Limit(limit int, cancelWhenReached bool) Node {
 	return Ord(func(pipeline *Pipeline, _ NodeKind, size *int) (receiver Receiver, _ Finalizer) {
 		switch {
@@ -323,10 +320,10 @@ func Limit(limit int, cancelWhenReached bool) Node {
 	})
 }
 
-// Skip creates an ordered node with a filter that skips the first n
-// elements from the data batches it passes to the next filter in the
-// pipeline. If n is negative, no data is passed through, and the
-// error value of the pipeline is set to a non-nil value.
+// Skip creates an ordered node with a filter that skips the first n elements
+// from the data batches it passes to the next filter in the pipeline. If n is
+// negative, no data is passed through, and the error value of the pipeline is
+// set to a non-nil value.
 func Skip(n int) Node {
 	return Ord(func(pipeline *Pipeline, _ NodeKind, size *int) (receiver Receiver, _ Finalizer) {
 		switch {

@@ -1,10 +1,10 @@
 package parallel_test
 
-// This is a simplified version of a heat distribution simulation,
-// based on an implementation by Wilfried Verachtert.
+// This is a simplified version of a heat distribution simulation, based on an
+// implementation by Wilfried Verachtert.
 //
-// See https://en.wikipedia.org/wiki/Heat_equation for some
-// theoretical background.
+// See https://en.wikipedia.org/wiki/Heat_equation for some theoretical
+// background.
 
 import (
 	"fmt"
@@ -19,9 +19,9 @@ const ε = 0.001
 
 func maxDiff(m1, m2 *mat.Dense) (result float64) {
 	rows, cols := m1.Dims()
-	result, _ = parallel.Float64RangeReduce(
+	result = parallel.RangeReduceFloat64(
 		1, rows-1, 0,
-		func(low, high int) (result float64, err error) {
+		func(low, high int) (result float64) {
 			for row := low; row < high; row++ {
 				r1 := m1.RawRowView(row)
 				r2 := m2.RawRowView(row)
@@ -31,12 +31,7 @@ func maxDiff(m1, m2 *mat.Dense) (result float64) {
 			}
 			return
 		},
-		func(x, y float64) (float64, error) {
-			if x > y {
-				return x, nil
-			}
-			return y, nil
-		},
+		math.Max,
 	)
 	return
 }
@@ -44,7 +39,7 @@ func maxDiff(m1, m2 *mat.Dense) (result float64) {
 func HeatDistributionStep(u, v *mat.Dense) {
 	rows, cols := u.Dims()
 	parallel.Range(1, rows-1, 0,
-		func(low, high int) error {
+		func(low, high int) {
 			for row := low; row < high; row++ {
 				uRow := u.RawRowView(row)
 				vRow := v.RawRowView(row)
@@ -54,7 +49,6 @@ func HeatDistributionStep(u, v *mat.Dense) {
 					uRow[col] = (vRowUp[col] + vRowDn[col] + vRow[col-1] + vRow[col+1]) / 4.0
 				}
 			}
-			return nil
 		},
 	)
 }

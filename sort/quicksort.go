@@ -8,9 +8,9 @@ import (
 
 const qsortGrainSize = 0x500
 
-// Sorter is a type, typically a collection, that can be sorted by
-// Sort in this package. The methods require that (ranges of) elements
-// of the collection can be enumerated by integer indices.
+// Sorter is a type, typically a collection, that can be sorted by Sort in this
+// package. The methods require that (ranges of) elements of the collection can
+// be enumerated by integer indices.
 type Sorter interface {
 	SequentialSorter
 	sort.Interface
@@ -85,8 +85,8 @@ func Sort(data Sorter) {
 			data.Swap(j, index)
 			i = j + 1
 			parallel.Do(
-				func() error { pSort(index, j-index); return nil },
-				func() error { pSort(i, index+size-i); return nil },
+				func() { pSort(index, j-index) },
+				func() { pSort(i, index+size-i) },
 			)
 		}
 	}

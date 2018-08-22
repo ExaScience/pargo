@@ -17,11 +17,10 @@ type lparnode struct {
 	finalizers []Finalizer
 }
 
-// LimitedPar creates a parallel node with the given filters.
-// The node uses at most limit goroutines at the same time.
-// If limit is 0, a reasonable default is used instead.
-// Even if limit is 0, the node is still limited.
-// For unlimited nodes, use Par instead.
+// LimitedPar creates a parallel node with the given filters. The node uses at
+// most limit goroutines at the same time. If limit is 0, a reasonable default
+// is used instead. Even if limit is 0, the node is still limited. For unlimited
+// nodes, use Par instead.
 func LimitedPar(limit int, filters ...Filter) Node {
 	if limit <= 0 {
 		limit = runtime.GOMAXPROCS(0)

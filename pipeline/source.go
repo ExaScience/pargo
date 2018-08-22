@@ -7,22 +7,20 @@ import (
 	"reflect"
 )
 
-// A Source represents an object that can generate data batches for
-// pipelines.
+// A Source represents an object that can generate data batches for pipelines.
 type Source interface {
 	// Err returns an error value or nil
 	Err() error
 
-	// Prepare receives a pipeline context and informs the pipeline what
-	// the total expected size of all data batches is. The return value
-	// is -1 if the total size is unknown or difficult to determine.
+	// Prepare receives a pipeline context and informs the pipeline what the
+	// total expected size of all data batches is. The return value is -1 if the
+	// total size is unknown or difficult to determine.
 	Prepare(ctx context.Context) (size int)
 
-	// Fetch gets a data batch of the requested size from the source.
-	// It returns the size of the data batch that it was actually able
-	// to fetch. It returns 0 if there is no more data to be fetched
-	// from the source; the pipeline will then make no further attempts
-	// to fetch more elements.
+	// Fetch gets a data batch of the requested size from the source. It returns
+	// the size of the data batch that it was actually able to fetch. It returns
+	// 0 if there is no more data to be fetched from the source; the pipeline
+	// will then make no further attempts to fetch more elements.
 	Fetch(size int) (fetched int)
 
 	// Data returns the last fetched data batch.
@@ -121,15 +119,15 @@ func reflectSource(source interface{}) Source {
 	}
 }
 
-// Scanner is a wrapper around bufio.Scanner so it can act as a data
-// source for pipelines. It fetches strings.
+// Scanner is a wrapper around bufio.Scanner so it can act as a data source for
+// pipelines. It fetches strings.
 type Scanner struct {
 	*bufio.Scanner
 	data interface{}
 }
 
-// NewScanner returns a new Scanner to read from r. The split function
-// defaults to bufio.ScanLines.
+// NewScanner returns a new Scanner to read from r. The split function defaults
+// to bufio.ScanLines.
 func NewScanner(r io.Reader) *Scanner {
 	return &Scanner{Scanner: bufio.NewScanner(r)}
 }
@@ -158,8 +156,8 @@ func (src *Scanner) Data() interface{} {
 	return src.data
 }
 
-// BytesScanner is a wrapper around bufio.Scanner so it can act as
-// a data source for pipelines. It fetches slices of bytes.
+// BytesScanner is a wrapper around bufio.Scanner so it can act as a data source
+// for pipelines. It fetches slices of bytes.
 type BytesScanner struct {
 	*bufio.Scanner
 	data interface{}

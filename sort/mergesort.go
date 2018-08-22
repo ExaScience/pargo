@@ -8,31 +8,31 @@ import (
 
 const msortGrainSize = 0x3000
 
-// StableSorter is a type, typically a collection, that can be sorted
-// by StableSort in this package. The methods require that ranges of
-// elements of the collection can be enumerated by integer indices.
+// StableSorter is a type, typically a collection, that can be sorted by
+// StableSort in this package. The methods require that ranges of elements of
+// the collection can be enumerated by integer indices.
 type StableSorter interface {
 	SequentialSorter
 
-	// NewTemp creates a new collection that can hold as many elements
-	// as the original collection. This is temporary memory needed by
-	// StableSort, but not needed anymore afterwards. The temporary
-	// collection does not need to be initialized.
+	// NewTemp creates a new collection that can hold as many elements as the
+	// original collection. This is temporary memory needed by StableSort, but
+	// not needed anymore afterwards. The temporary collection does not need to
+	// be initialized.
 	NewTemp() StableSorter
 
 	// Len is the number of elements in the collection.
 	Len() int
 
-	// Less reports whether the element with index i should sort
-	// before the element with index j.
+	// Less reports whether the element with index i should sort before the
+	// element with index j.
 	Less(i, j int) bool
 
-	// Assign returns a function that assigns ranges from source to the
-	// receiver collection. The element with index i is the first
-	// element in the receiver to assign to, and the element with index
-	// j is the first element in the source collection to assign from,
-	// with len determining the number of elements to assign. The effect
-	// should be the same as receiver[i:i+len] = source[j:j+len].
+	// Assign returns a function that assigns ranges from source to the receiver
+	// collection. The element with index i is the first element in the receiver
+	// to assign to, and the element with index j is the first element in the
+	// source collection to assign from, with len determining the number of
+	// elements to assign. The effect should be the same as receiver[i:i+len] =
+	// source[j:j+len].
 	Assign(source StableSorter) func(i, j, len int)
 }
 
@@ -119,8 +119,8 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 		q3 := p3 + (q1 - p1) + (q2 - p2)
 		A.assign(q3, q1, 1)
 		parallel.Do(
-			func() error { pMerge(T, p1, q1-1, p2, q2-1, A, p3); return nil },
-			func() error { pMerge(T, q1+1, r1, q2, r2, A, q3+1); return nil },
+			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
+			func() { pMerge(T, q1+1, r1, q2, r2, A, q3+1) },
 		)
 	} else {
 		if n2 == 0 {
@@ -131,21 +131,19 @@ func pMerge(T *sorter, p1, r1, p2, r2 int, A *sorter, p3 int) {
 		q3 := p3 + (q1 - p1) + (q2 - p2)
 		A.assign(q3, q2, 1)
 		parallel.Do(
-			func() error { pMerge(T, p1, q1-1, p2, q2-1, A, p3); return nil },
-			func() error { pMerge(T, q1, r1, q2+1, r2, A, q3+1); return nil },
+			func() { pMerge(T, p1, q1-1, p2, q2-1, A, p3) },
+			func() { pMerge(T, q1, r1, q2+1, r2, A, q3+1) },
 		)
 	}
 }
 
-// StableSort uses a parallel implementation of merge sort, also known
-// as cilksort.
+// StableSort uses a parallel implementation of merge sort, also known as
+// cilksort.
 //
-// StableSort is only stable if data's SequentialSort method is
-// stable.
+// StableSort is only stable if data's SequentialSort method is stable.
 //
-// StableSort is good for large core counts and large collection
-// sizes, but needs a shallow copy of the data collection as
-// additional temporary memory.
+// StableSort is good for large core counts and large collection sizes, but
+// needs a shallow copy of the data collection as additional temporary memory.
 func StableSort(data StableSorter) {
 	// See https://en.wikipedia.org/wiki/Introduction_to_Algorithms and
 	// https://www.clear.rice.edu/comp422/lecture-notes/ for details on the algorithm.
@@ -173,15 +171,15 @@ func StableSort(data StableSorter) {
 			q2 := q1 + q1
 			q3 := q2 + q1
 			parallel.Do(
-				func() error { pSort(index, q1); return nil },
-				func() error { pSort(index+q1, q1); return nil },
-				func() error { pSort(index+q2, q1); return nil },
-				func() error { pSort(index+q3, size-q3); return nil },
+				func() { pSort(index, q1) },
+				func() { pSort(index+q1, q1) },
+				func() { pSort(index+q2, q1) },
+				func() { pSort(index+q3, size-q3) },
 			)
 			temp.Wait()
 			parallel.Do(
-				func() error { pMerge(T, index, index+q1-1, index+q1, index+q2-1, A, index); return nil },
-				func() error { pMerge(T, index+q2, index+q3-1, index+q3, index+size-1, A, index+q2); return nil },
+				func() { pMerge(T, index, index+q1-1, index+q1, index+q2-1, A, index) },
+				func() { pMerge(T, index+q2, index+q3-1, index+q3, index+size-1, A, index+q2) },
 			)
 			pMerge(A, index, index+q2-1, index+q2, index+size-1, T, index)
 		}

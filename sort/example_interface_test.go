@@ -1,6 +1,5 @@
-// Copyright 2011 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright 2011 The Go Authors. All rights reserved. Use of this source code
+// is governed by a BSD-style license that can be found in the LICENSE file.
 
 // Adapted by Pascal Costanza for the Pargo package.
 
@@ -22,8 +21,8 @@ func (p Person) String() string {
 	return fmt.Sprintf("%s: %d", p.Name, p.Age)
 }
 
-// ByAge implements sort.SequentialSorter, sort.Sorter, and
-// sort.StableSorter for []Person based on the Age field.
+// ByAge implements sort.SequentialSorter, sort.Sorter, and sort.StableSorter
+// for []Person based on the Age field.
 type ByAge []Person
 
 func (a ByAge) SequentialSort(i, j int) {
