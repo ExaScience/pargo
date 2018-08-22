@@ -462,7 +462,7 @@ func (m *Map) Reduce(
 	join func(x, y interface{}) interface{},
 ) interface{} {
 	splits := m.splits
-	// NewMap ensures that len(m.splits) > 0
+	// NewMap ensures that len(splits) > 0
 	result := splits[0].reduce(reduce)
 	for i := 1; i < len(splits); i++ {
 		result = join(result, splits[i].reduce(reduce))
@@ -492,7 +492,7 @@ func (m *Map) ReduceFloat64(
 	join func(x, y float64) float64,
 ) float64 {
 	splits := m.splits
-	// NewMap ensures that len(m.splits) > 0
+	// NewMap ensures that len(splits) > 0
 	result := splits[0].reduceFloat64(reduce)
 	for i := 1; i < len(splits); i++ {
 		result = join(result, splits[i].reduceFloat64(reduce))
@@ -689,7 +689,7 @@ func (m *Map) ParallelReduce(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -700,7 +700,7 @@ func (m *Map) ParallelReduce(
 			}()
 			left = splits[0].reduce(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -752,7 +752,7 @@ func (m *Map) ParallelReduceFloat64(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -763,7 +763,7 @@ func (m *Map) ParallelReduceFloat64(
 			}()
 			left = splits[0].reduceFloat64(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -811,7 +811,7 @@ func (m *Map) ParallelReduceFloat64Sum(reduce func(map[interface{}]interface{}) 
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -822,7 +822,7 @@ func (m *Map) ParallelReduceFloat64Sum(reduce func(map[interface{}]interface{}) 
 			}()
 			left = splits[0].reduceFloat64(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -870,7 +870,7 @@ func (m *Map) ParallelReduceFloat64Product(reduce func(map[interface{}]interface
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -881,7 +881,7 @@ func (m *Map) ParallelReduceFloat64Product(reduce func(map[interface{}]interface
 			}()
 			left = splits[0].reduceFloat64(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -930,7 +930,7 @@ func (m *Map) ParallelReduceInt(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -941,7 +941,7 @@ func (m *Map) ParallelReduceInt(
 			}()
 			left = splits[0].reduceInt(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -989,7 +989,7 @@ func (m *Map) ParallelReduceIntSum(reduce func(map[interface{}]interface{}) int)
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1000,7 +1000,7 @@ func (m *Map) ParallelReduceIntSum(reduce func(map[interface{}]interface{}) int)
 			}()
 			left = splits[0].reduceInt(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1048,7 +1048,7 @@ func (m *Map) ParallelReduceIntProduct(reduce func(map[interface{}]interface{}) 
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1059,7 +1059,7 @@ func (m *Map) ParallelReduceIntProduct(reduce func(map[interface{}]interface{}) 
 			}()
 			left = splits[0].reduceInt(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1111,7 +1111,7 @@ func (m *Map) ParallelReduceString(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1122,7 +1122,7 @@ func (m *Map) ParallelReduceString(
 			}()
 			left = splits[0].reduceString(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1170,7 +1170,7 @@ func (m *Map) ParallelReduceStringSum(reduce func(map[interface{}]interface{}) s
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1181,7 +1181,7 @@ func (m *Map) ParallelReduceStringSum(reduce func(map[interface{}]interface{}) s
 			}()
 			left = splits[0].reduceString(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1244,7 +1244,7 @@ func (m *Map) SpeculativeReduce(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1255,7 +1255,7 @@ func (m *Map) SpeculativeReduce(
 			}()
 			left, b0 = splits[0].speculativeReduce(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1324,7 +1324,7 @@ func (m *Map) SpeculativeReduceFloat64(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1335,7 +1335,7 @@ func (m *Map) SpeculativeReduceFloat64(
 			}()
 			left, b0 = splits[0].speculativeReduceFloat64(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1404,7 +1404,7 @@ func (m *Map) SpeculativeReduceInt(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1415,7 +1415,7 @@ func (m *Map) SpeculativeReduceInt(
 			}()
 			left, b0 = splits[0].speculativeReduceInt(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
@@ -1484,7 +1484,7 @@ func (m *Map) SpeculativeReduceString(
 		var p interface{}
 		var wg sync.WaitGroup
 		wg.Add(1)
-		switch len(m.splits) {
+		switch len(splits) {
 		case 2:
 			go func() {
 				defer func() {
@@ -1495,7 +1495,7 @@ func (m *Map) SpeculativeReduceString(
 			}()
 			left, b0 = splits[0].speculativeReduceString(reduce)
 		default:
-			half := len(m.splits) / 2
+			half := len(splits) / 2
 			go func() {
 				defer func() {
 					p = internal.WrapPanic(recover())
