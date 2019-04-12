@@ -182,6 +182,7 @@ func Range(
 			mid := low + batchSize*half
 			if mid >= high {
 				f(low, high)
+				return
 			}
 			recur(low, mid, half)
 			recur(mid, high, n-half)

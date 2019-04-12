@@ -615,6 +615,7 @@ func Range(
 			mid := low + batchSize*half
 			if mid >= high {
 				f(low, high)
+				return
 			}
 			var p interface{}
 			var wg sync.WaitGroup
