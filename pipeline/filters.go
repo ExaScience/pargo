@@ -21,6 +21,13 @@ func NewNode(kind NodeKind, filters ...Filter) Node {
 	}
 }
 
+// Identity is a filter that passes data batches through unmodified.
+// This filter will be optimized away in a pipeline, so it
+// does not hurt to add it.
+func Identity(_ *Pipeline, _ NodeKind, _ *int) (_ Receiver, _ Finalizer) {
+	return
+}
+
 // Receive creates a Filter that returns the given receiver and a nil finalizer.
 func Receive(receive Receiver) Filter {
 	return func(_ *Pipeline, _ NodeKind, _ *int) (receiver Receiver, _ Finalizer) {

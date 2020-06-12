@@ -192,3 +192,100 @@ func (src *BytesScanner) Fetch(n int) (fetched int) {
 func (src *BytesScanner) Data() interface{} {
 	return src.data
 }
+
+// Func is a generic source that generates data batches
+// by repeatedly calling a function.
+type Func struct {
+	data interface{}
+	err error
+	size int
+	fetch func(size int) (data interface{}, fetched int, err error)
+}
+
+// NewFunc returns a new Func to generate data batches
+// by repeatedly calling fetch.
+//
+// The size parameter informs the pipeline what the total
+// expected size of all data batches is. Pass -1 if the
+// total size is unknown or difficult to determine.
+//
+// The fetch function returns a data batch of the requested
+// size. It returns the size of the data batch that it was
+// actually able to fetch. It returns 0 if there is no more
+// data to be fetched from the source; the pipeline will
+// then make no further attempts to fetch more elements.
+//
+// The fetch function can also return an error if necessary.
+func NewFunc(size int, fetch func(size int) (data interface{}, fetched int, err error)) *Func {
+	return &Func{size: size, fetch: fetch}
+}
+
+// Err implements the method of the Source interface.
+func (f *Func) Err() error {
+	return f.err
+}
+
+// Prepare implements the method of the Source interface.
+func (f *Func) Prepare(_ context.Context) int {
+	return f.size
+}
+
+// Fetch implements the method of the Source interface.
+func (f *Func) Fetch(size int) (fetched int) {
+	f.data, fetched, f.err = f.fetch(size)
+	return
+}
+
+// Data implements the method of the Source interface.
+func (f *Func) Data() interface{} {
+	return f.data
+}
+
+// SingletonChan is similar to a regular chan source,
+// except it only accepts and passes through single
+// elements instead of creating slices of elements
+// from the input channel.
+type SingletonChan struct {
+	cases []reflect.SelectCase
+	zero reflect.Value
+	data interface{}
+}
+
+// NewSingletonChan returns a new SingletonChan to read from
+// the given channel.
+func NewSingletonChan(channel interface{}) *SingletonChan {
+	value := reflect.ValueOf(channel)
+	if value.Kind() != reflect.Chan {
+		panic("parameter for pargo.pipeline.NewSingletonChan is not a channel")
+	}
+	return &SingletonChan{
+		cases: []reflect.SelectCase{{Dir: reflect.SelectRecv, Chan: value}},
+		zero: reflect.Zero(value.Type().Elem()),
+	}
+}
+
+// Err implements the method of the Source interface.
+func (src *SingletonChan) Err() error {
+	return nil
+}
+
+// Prepare implements the method of the Source interface.
+func (src *SingletonChan) Prepare(ctx context.Context) (size int) {
+	src.cases = append(src.cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())})
+	return -1
+}
+
+// Fetch implements the method of the Source interface.
+func (src *SingletonChan) Fetch(n int) (fetched int) {
+	if chosen, element, ok := reflect.Select(src.cases); (chosen == 0) && ok {
+		src.data = element.Interface()
+		return 1
+	}
+	src.data = src.zero
+	return 0
+}
+
+// Data implements the method of the Source interface.
+func (src *SingletonChan) Data() interface{} {
+	return src.data
+}
